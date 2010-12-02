@@ -1,0 +1,17 @@
+server - string
+ncores - int
+
+list(list(server1, ncores1),
+     list(server2, ncores2),
+     ...,
+     list(servern, ncoresn))
+
+default:
+list(list("localhost", system("cpu")))
+
+shortcuts:
+ncores		--> list("localhost", ncores)
+server		--> list(server, [all cpus on this server])
+
+system("sh", "ssh "+server+"id
+

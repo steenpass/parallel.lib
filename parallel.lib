@@ -1,0 +1,202 @@
+proc parWaitAll (list commands, list args, list #)
+{
+  // initialize the timer
+  int oldtimerresolution = system("--ticks-per-sec");
+  system("--ticks-per-sec", 1000);
+  int t = rtimer;
+
+  // auxiliary variables
+  int i, j;
+
+  // read optional parameters
+  list defaults = list(0, "ssi", list(list("localhost", system("cpu"))));
+  for(i = 1; i <= 3; i++)
+  {
+    if(typeof(#[i]) != typeof(defaults[i]))
+    {
+      # = insert(#, defaults[i], i-1);
+    }
+  }
+  if(size(#) != 3)
+  {
+    ERROR("wrong optional parameters");
+  }
+  int timeout = #[1];
+  string linktype = #[2];
+  list servers = #[3];
+
+  // error checking
+  int njobs = size(commands);
+  if(njobs != size(args))
+  {
+    ERROR("The number of commands does not match the number of lists\n"
+         +"of arguments.");
+  }
+  if(njobs == 0)
+  {
+    ERROR("no commands specified");
+  }
+  for(i = 1; i <= njobs; i++)
+  {
+    if(typeof(commands[i]) != "string")
+    {
+      ERROR("The first argument is not a list of strings.");
+    }
+    if(typeof(args[i]) != "list")
+    {
+      ERROR("The second argument is not a list of lists.");
+    }
+  }
+  if(timeout < 0)
+  {
+    ERROR("The given timeout is negative.");
+  }
+  if(linktype != "ssi" && linktype != "mp")
+  {
+    ERROR("The given linktype is not recognized.");
+  }
+  int nservers = size(servers);
+  // TODO: error checking for servers
+
+  // skip those cores which won't be needed
+  int nlinks;
+  for(i = 1; i <= nservers; i++)
+  {
+    if(nlinks+servers[i][2] <= njobs)
+    {
+      nlinks += servers[i][2];
+    }
+    else
+    {
+      if(nlinks == njobs)
+      {
+        servers = servers[1..(i-1)];
+      }
+      else
+      {
+        servers = servers[1..i];
+        servers[i][2] = njobs-nlinks;
+        nlinks = njobs;
+      }
+      nservers = size(servers);
+      break;
+    }
+  }
+
+  // open the links and distribute work to each of them
+  intvec assignment = 0:nlinks;  // link number i is currently doing job number assignment[i]
+  string server;
+  int ncores;
+  list currentargs;
+  int k = 1;
+  for(i = 1; i <= nservers; i++)
+  {
+    server = servers[i][1];
+    ncores = servers[i][2];
+    for(j = 1; j <= ncores; j++)
+    {
+      if(server == "localhost")
+      {
+        if(linktype == "ssi")
+        {
+          link l(k) = "ssi:fork";
+        }
+        else
+        {
+          link l(k) = "MPtcp:fork";
+        }
+        open(l(k));
+      }
+      else
+      {
+        if(linktype == "ssi")
+        {
+          link l(k) = "ssi:tcp "+server;
+        }
+        else
+        {
+          link l(k) = "MPtcp:launch "+server;
+        }
+        open(l(k));
+        write(l(k), quote(execute("def args;")));
+        write(l(k), quote(args = eval(args)));
+      }
+      currentargs = args[k];
+      write(l(k), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
+      assignment[k] = k;
+      k++;
+    }
+  }
+  list links = list(l(1..nlinks));
+
+  // distribute the rest of the work
+  list results;
+  int wait;
+  while(k <= njobs)
+  {
+    if(timeout == 0)
+    {
+      wait = waitfirst(links);
+    }
+    else
+    {
+      wait = waitfirst(links, timeout-(rtimer-t));
+    }
+    if(wait > 0)
+    {
+      results[assignment[wait]] = read(l(wait));
+      currentargs = args[k];
+      write(l(wait), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
+      assignment[wait] = k;
+      k++;
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  // collect the rest of the results ans close all links
+  if(timeout == 0)
+  {
+    waitall(links);
+    wait = 1;
+  }
+  else
+  {
+    wait = waitall(links, timeout-(rtimer-t));
+  }
+  if(wait)
+  {
+    for(i = 1; i <= nlinks; i++)
+    {
+      results[assignment[i]] = read(l(i));
+      close(l(i));
+    }
+  }
+  else
+  {
+    for(i = 1; i <= nlinks; i++)
+    {
+      if(status(l(i), "read", "ready"))
+      {
+        results[assignment[i]] = read(l(i));
+      }
+      close(l(i));
+    }
+  }
+
+  system("--ticks-per-sec", oldtimerresolution);
+  return(results);
+}
+
+proc parWaitAllSingleCmd (string cmd, list args, list #)
+{
+  list commands;
+  for(int i = size(args); i > 0; i--)
+  {
+    commands[i] = cmd;
+  }
+  return(parWaitAll(commands, args, #));
+}
+
