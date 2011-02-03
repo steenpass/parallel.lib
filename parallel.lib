@@ -4,7 +4,7 @@ ideal j = y;
 list commands = list("std", "std");
 list args = list(list(i), list(j));
 
-proc doInParWaitN (list commands, list args, int N, list #)
+proc doInParWaitN(list commands, list args, int N, list #)
 {
   // initialize the timer
   int oldtimerresolution = system("--ticks-per-sec");
@@ -128,11 +128,13 @@ proc doInParWaitN (list commands, list args, int N, list #)
         write(l(k), quote(args = eval(args)));
         read(l(k));
       }
+      write(l(k), quote(execute("def result;")));
+      read(l(k));
       write(l(k), quote(execute("list currentargs;")));
       read(l(k));
       write(l(k), quote(currentargs = args[eval(k)]));
       read(l(k));
-      write(l(k), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
+      write(l(k), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(args[k])]);")));
       assignment[k] = k;
       k++;
     }
@@ -159,10 +161,13 @@ proc doInParWaitN (list commands, list args, int N, list #)
     }
     if(wait > 0)
     {
+      read(l(wait));
+      write(l(wait), quote(result));
       results[assignment[wait]] = read(l(wait));
       nfinished++;
-      currentargs = args[k];
-      write(l(wait), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
+      write(l(wait), quote(currentargs = args[eval(k)]));
+      read(l(wait));
+      write(l(wait), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(args[k])]);")));
       assignment[wait] = k;
       k++;
     }
@@ -185,8 +190,8 @@ proc doInParWaitN (list commands, list args, int N, list #)
     }
     if(wait)
     {
-wait;
-l(wait);
+      read(l(wait));
+      write(l(wait), quote(result));
       results[assignment[wait]] = read(l(wait));
       nfinished++;
     }
@@ -199,6 +204,8 @@ l(wait);
   {
     if(status(l(i), "read", "ready"))
     {
+      read(l(i));
+      write(l(i), quote(result));
       results[assignment[i]] = read(l(i));
     }
     close(l(i));
@@ -208,12 +215,30 @@ l(wait);
   return(results);
 }
 
-proc parWaitAllSingleCmd (string cmd, list args, list #)
+proc doInParWaitFirst(list commands, list args, list #)
+{
+  return(doInParWaitN(commands, args, 1, #));
+}
+
+proc doInParWaitAll(list commands, list args, list #)
+{
+  return(doInParWaitN(commands, args, siez(commands), #));
+}
+
+
+proc doInParWaitAllSingleCmd(string cmd, list args, list #)
 {
   list commands;
   for(int i = size(args); i > 0; i--)
   {
     commands[i] = cmd;
   }
-  return(parWaitAll(commands, args, #));
+  return(doInParWaitAll(commands, args, #));
 }
+
+proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
+{
+}
+
+/* worker farm */
+proc Create
