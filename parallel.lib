@@ -1,4 +1,10 @@
-proc parWaitAll (list commands, list args, list #)
+ring r = 0,(x,y,z),dp;
+ideal i = x;
+ideal j = y;
+list commands = list("std", "std");
+list args = list(list(i), list(j));
+
+proc doInParWaitN (list commands, list args, int N, list #)
 {
   // initialize the timer
   int oldtimerresolution = system("--ticks-per-sec");
@@ -57,6 +63,7 @@ proc parWaitAll (list commands, list args, list #)
   }
   int nservers = size(servers);
   // TODO: error checking for servers
+  // TODO: error checking for N
 
   // skip those cores which won't be needed
   int nlinks;
@@ -70,16 +77,15 @@ proc parWaitAll (list commands, list args, list #)
     {
       if(nlinks == njobs)
       {
-        servers = servers[1..(i-1)];
+        servers = list(servers[1..(i-1)]);
       }
       else
       {
-        servers = servers[1..i];
+        servers = list(servers[1..i]);
         servers[i][2] = njobs-nlinks;
         nlinks = njobs;
       }
       nservers = size(servers);
-      break;
     }
   }
 
@@ -87,8 +93,7 @@ proc parWaitAll (list commands, list args, list #)
   intvec assignment = 0:nlinks;  // link number i is currently doing job number assignment[i]
   string server;
   int ncores;
-  list currentargs;
-  int k = 1;
+  int k = 1;   // the index of the next job which has to be distributed to some link
   for(i = 1; i <= nservers; i++)
   {
     server = servers[i][1];
@@ -118,10 +123,15 @@ proc parWaitAll (list commands, list args, list #)
           link l(k) = "MPtcp:launch "+server;
         }
         open(l(k));
-        write(l(k), quote(execute("def args;")));
+        write(l(k), quote(execute("list args;")));
+        read(l(k));
         write(l(k), quote(args = eval(args)));
+        read(l(k));
       }
-      currentargs = args[k];
+      write(l(k), quote(execute("list currentargs;")));
+      read(l(k));
+      write(l(k), quote(currentargs = args[eval(k)]));
+      read(l(k));
       write(l(k), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
       assignment[k] = k;
       k++;
@@ -131,8 +141,13 @@ proc parWaitAll (list commands, list args, list #)
 
   // distribute the rest of the work
   list results;
-  int wait;
-  while(k <= njobs)
+  for(i = njobs; i > 0; i--)
+  {
+    results[i] = list();
+  }
+  int nfinished;  // the number of finished jobs
+  int wait;   // the index of the link which is finished, or 0 for timeout
+  while(k <= njobs && nfinished < N-1)
   {
     if(timeout == 0)
     {
@@ -145,6 +160,7 @@ proc parWaitAll (list commands, list args, list #)
     if(wait > 0)
     {
       results[assignment[wait]] = read(l(wait));
+      nfinished++;
       currentargs = args[k];
       write(l(wait), quote(execute(commands[k]+"(currentargs[1..size(args[k])]);")));
       assignment[wait] = k;
@@ -156,34 +172,36 @@ proc parWaitAll (list commands, list args, list #)
     }
   }
 
-  // collect the rest of the results ans close all links
-  if(timeout == 0)
+  // collect the rest of the results and close all links
+  while(nfinished < N)
   {
-    waitall(links);
-    wait = 1;
+    if(timeout == 0)
+    {
+      wait = waitfirst(links);
+    }
+    else
+    {
+      wait = waitfirst(links, timeout-(rtimer-t));
+    }
+    if(wait)
+    {
+wait;
+l(wait);
+      results[assignment[wait]] = read(l(wait));
+      nfinished++;
+    }
+    else
+    {
+      break;
+    }
   }
-  else
+  for(i = 1; i <= nlinks; i++)
   {
-    wait = waitall(links, timeout-(rtimer-t));
-  }
-  if(wait)
-  {
-    for(i = 1; i <= nlinks; i++)
+    if(status(l(i), "read", "ready"))
     {
       results[assignment[i]] = read(l(i));
-      close(l(i));
     }
-  }
-  else
-  {
-    for(i = 1; i <= nlinks; i++)
-    {
-      if(status(l(i), "read", "ready"))
-      {
-        results[assignment[i]] = read(l(i));
-      }
-      close(l(i));
-    }
+    close(l(i));
   }
 
   system("--ticks-per-sec", oldtimerresolution);
@@ -199,4 +217,3 @@ proc parWaitAllSingleCmd (string cmd, list args, list #)
   }
   return(parWaitAll(commands, args, #));
 }
-
