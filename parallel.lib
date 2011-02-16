@@ -184,7 +184,6 @@ proc doInParWaitN(list commands, list args, int N, list #)
         {
           link l(k) = "MPtcp:fork";
         }
-        open(l(k));
       }
       else
       {
@@ -196,17 +195,20 @@ proc doInParWaitN(list commands, list args, int N, list #)
         {
           link l(k) = "MPtcp:launch "+server;
         }
-        open(l(k));
-        write(l(k), quote(execute("list args;")));
-        read(l(k));
-        write(l(k), quote(args = eval(args)));
-        read(l(k));
       }
+      open(l(k));
       write(l(k), quote(execute("def result;")));
       read(l(k));
       write(l(k), quote(execute("list currentargs;")));
       read(l(k));
-      write(l(k), quote(currentargs = args[eval(k)]));
+      if(status(l(k), "mode", "fork"))
+      {
+        write(l(k), quote(currentargs = args[eval(k)]));
+      }
+      else
+      {
+        write(l(k), quote(currentargs = eval(args[k])));
+      }
       read(l(k));
       write(l(k), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
       assignment[k] = k;
@@ -239,7 +241,14 @@ proc doInParWaitN(list commands, list args, int N, list #)
       write(l(wait), quote(result));
       results[assignment[wait]] = read(l(wait));
       nfinished++;
-      write(l(wait), quote(currentargs = args[eval(k)]));
+      if(status(l(k), "mode", "fork"))
+      {
+        write(l(k), quote(currentargs = args[eval(k)]));
+      }
+      else
+      {
+        write(l(k), quote(currentargs = eval(args[k])));
+      }
       read(l(wait));
       write(l(wait), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
       assignment[wait] = k;
@@ -298,7 +307,6 @@ proc doInParWaitAll(list commands, list args, list #)
 {
   return(doInParWaitN(commands, args, size(commands), #));
 }
-
 
 proc doInParWaitAllSingleCmd(string cmd, list args, list #)
 {
