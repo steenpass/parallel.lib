@@ -1,17 +1,19 @@
 server - string
 ncores - int
+program - string
 
-list(list(server1, ncores1),
-     list(server2, ncores2),
+list(list(server1, ncores1, program1),
+     list(server2, ncores2, program2),
      ...,
-     list(servern, ncoresn))
+     list(servern, ncoresn, programn))
 
 default:
-list(list("localhost", system("cpu")))
+list(list("localhost", system("cpu"), ""))
 
-shortcuts:
-ncores		--> list("localhost", ncores)
-server		--> list(server, [all cpus on this server])
+Any values left out are replaced by
+"localhost", [all cpus on this server] and "" respectively,
+except for ssi:tcp links, where the default program is
+the return value of system("Singular").
 
-system("sh", "ssh "+server+"id
-
+Note that the shortcut list("any string") defines the server
+rather than the program to be used.

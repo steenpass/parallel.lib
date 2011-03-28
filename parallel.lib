@@ -1,10 +1,6 @@
-ring r = 0,(x,y,z),dp;
-ideal i = x;
-ideal j = y;
-list commands = list("std", "std");
-list args = list(list(i), list(j));
+option(noredefine);
 
-proc doInParWaitN(list commands, list args, int N, list #)
+proc parallelWaitN(list commands, list args, int N, list #)
 {
   // initialize the timer
   int oldtimerresolution = system("--ticks-per-sec");
@@ -12,31 +8,57 @@ proc doInParWaitN(list commands, list args, int N, list #)
   int t = rtimer;
 
   // auxiliary variables
-  int i, j;
+  int i, j, m;
 
   // read optional parameters
-  list defaults = list(0, "ssi", list(list("localhost", 0)));
-  for(i = 1; i <= 3; i++)
+  list defaultserver = list("localhost", system("cpu"), "");
+  list defaults = list(0, "ssi", list(defaultserver), 0:size(commands));
+  for(i = 1; i <= size(defaults); i++)
   {
     if(typeof(#[i]) != typeof(defaults[i]))
     {
       # = insert(#, defaults[i], i-1);
     }
   }
-  if(size(#) != 3)
+  if(size(#) != size(defaults))
   {
     ERROR("wrong optional parameters");
+  }
+  for(j = size(#[3]); j > 0; j--)
+  {
+    if(typeof(#[3][j][1]) != typeof(defaultserver[1]))
+    {
+      #[3][j] = insert(#[3][j], defaultserver[1], 0);
+    }
+    defaultserver[3] = "";
+    // only for ssi:tcp links, the default program is system("Singular")
+    if(#[2] == "ssi" && #[3][j][1] != "localhost")
+    {
+      defaultserver[3] = system("Singular");
+    }
+    for(i = 2; i <= size(defaultserver); i++)
+    {
+      if(typeof(#[3][j][i]) != typeof(defaultserver[i]))
+      {
+        #[3][j] = insert(#[3][j], defaultserver[i], i-1);
+      }
+    }
+    if(size(#[3][j]) != size(defaultserver))
+    {
+      ERROR("wrong declaration for server no. "+string(j));
+    }
   }
   int timeout = #[1];
   string linktype = #[2];
   list servers = #[3];
+  intvec maxmems = #[4];
 
   // error checking
   int njobs = size(commands);
   if(njobs != size(args))
   {
-    ERROR("The number of commands does not match the number of lists\n"
-         +"of arguments.");
+    ERROR("The number of commands does not match the number of lists"
+         +newline+"of arguments.");
   }
   if(njobs == 0)
   {
@@ -59,8 +81,8 @@ proc doInParWaitN(list commands, list args, int N, list #)
   }
   if(N > njobs)
   {
-    ERROR("The number of jobs which you wnat to wait for is greater\n"
-         +"than the number of jobs itself.");
+    ERROR("The number of jobs which you wnat to wait for is greater"
+         +newline+"than the number of jobs itself.");
   }
   if(timeout < 0)
   {
@@ -77,36 +99,17 @@ proc doInParWaitN(list commands, list args, int N, list #)
   }
   for(i = 1; i <= nservers; i++)
   {
-    if(typeof(servers[i] == "int"))   // shortcut
-    {
-      servers[i] = list("localhost", servers[i]);
-    }
-    else if(typeof(servers[i] == "string"))   // shortcut
-    {
-      servers[i] = list(servers[i], 0);
-    }
-    else if(typeof(servers[i] == "list"))
-    {
-      if(typeof(servers[i][1] != "string") || typeof(servers[i][2] != "int"))
-      {
-        ERROR("wrong declaration for server no. "+string(i));
-      }
-    }
-    else
-    }
-      ERROR("wrong declaration for server no. "+string(i));
-    }
     if(servers[i][1] != "localhost")
     {
       if(system("sh", "ssh "+servers[i][1]+" exit"))
       {
-        ERROR("Could not connect to server "+servers[i][1]);
+        ERROR("Could not connect to server \""+servers[i][1]+"\"");
       }
     }
     if(servers[i][2] < 0)
     {
-      ERROR("The number of cores to be used on server no. "+string(i)
-           +" is negative.");
+      ERROR("The number of cores to be used on server \""+servers[i][1]+"\""
+           +newline+" is negative.");
     }
     if(servers[i][1] == "localhost")
     {
@@ -116,7 +119,7 @@ proc doInParWaitN(list commands, list args, int N, list #)
     {
       if(linktype == "ssi")
       {
-        link lcpu(i) = "ssi:tcp "+servers[i][1];
+        link lcpu(i) = "ssi:tcp "+servers[i][1]+" "+system("Singular");
       }
       else
       {
@@ -124,19 +127,43 @@ proc doInParWaitN(list commands, list args, int N, list #)
       }
       open(lcpu(i));
       write(lcpu(i), quote(system("cpu")));
-      int ncpus(i) = read(lcpus(i));
+      int ncpus(i) = read(lcpu(i));
       close(lcpu(i));
       kill lcpu(i);
     }
     if(servers[i][2] == 0)
     {
-      servers[i][2] == ncpus(i);
+      servers[i][2] = ncpus(i);
     }
-    else if(servers[i][2] > ncpus(i))
+    else
     {
-      ERROR("The number of cores to use on server no. "+string(i)+" is greater\n"
-           +"than the number of available cores");
+      if(servers[i][2] > ncpus(i))
+      {
+        ERROR("The number of cores to use on server \""+servers[i][1]+"\""
+             +newline+"is greater than the number of available cores");
+      }
     }
+    if(system("sh", "ssh "+servers[i][1]+
+                    " 'test -e `which "+servers[i][3]+"`'"))
+    {
+      ERROR("\""+servers[i][3]+"\" was not found on"
+           +"\""+servers[i][1]+"\".");
+    }
+  }
+  if(size(maxmems) != njobs)
+  {
+    ERROR("The size of the intvec which specifies the maximal amount of memory"
+         +newline+"to be used for each job does not match the number of jobs.");
+  }
+  int havemaxmem;
+  for(i = 1; i <= njobs; i++)
+  {
+    if(maxmems[i] < 0)
+    {
+      ERROR("The maximal amount of memory to be used for job no. "+string(i)
+           +"is negative.");
+    }
+    havemaxmem = havemaxmem+maxmems[i];
   }
 
   // skip those cores which won't be needed
@@ -145,7 +172,7 @@ proc doInParWaitN(list commands, list args, int N, list #)
   {
     if(nlinks+servers[i][2] <= njobs)
     {
-      nlinks += servers[i][2];
+      nlinks = nlinks+servers[i][2];
     }
     else
     {
@@ -163,15 +190,16 @@ proc doInParWaitN(list commands, list args, int N, list #)
     }
   }
 
-  // open the links and distribute work to each of them
-  intvec assignment = 0:nlinks;  // link number i is currently doing job number assignment[i]
+  // open the links
   string server;
   int ncores;
-  int k = 1;   // the index of the next job which has to be distributed to some link
+  string program;
+  int k = 1;   // the index of the link
   for(i = 1; i <= nservers; i++)
   {
     server = servers[i][1];
     ncores = servers[i][2];
+    program = servers[i][3];
     for(j = 1; j <= ncores; j++)
     {
       if(server == "localhost")
@@ -189,39 +217,94 @@ proc doInParWaitN(list commands, list args, int N, list #)
       {
         if(linktype == "ssi")
         {
-          link l(k) = "ssi:tcp "+server;
+          link l(k) = "ssi:tcp "+server+":"+program;
         }
         else
         {
-          link l(k) = "MPtcp:launch "+server;
+          if(program == "")
+          {
+            link l(k) = "MPtcp:launch+" --MPhost "+server;
+          }
+          else
+          {
+            link l(k) = "MPtcp:launch+" --MPhost "+server
+              +" --MPapplication "+program;
+          }
         }
       }
       open(l(k));
-      write(l(k), quote(execute("def result;")));
-      read(l(k));
-      write(l(k), quote(execute("list currentargs;")));
-      read(l(k));
-      if(status(l(k), "mode", "fork"))
-      {
-        write(l(k), quote(currentargs = args[eval(k)]));
-      }
-      else
-      {
-        write(l(k), quote(currentargs = eval(args[k])));
-      }
-      read(l(k));
-      write(l(k), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
-      assignment[k] = k;
       k++;
     }
   }
   list links = list(l(1..nlinks));
 
+  // start a memory watchdog if needed
+  if(havemaxmem)
+  {
+    if(linktype == "ssi")
+    {
+      link mempatrol = "ssi:fork";
+    }
+    else
+    {
+      link mempatrol = "MPtcp:fork";
+    }
+    open(mempatrol);
+    write(mempatrol, quote(watchlinks()));
+    links = insert(links, mempatrol, nlinks);
+  }
+  int nkilled;   // the number of jobs killed by the mempatrol
+
+  // distribute work to the links
+  k = 1; // from here on, k is the index of the next job which must be
+         // distributed to some link
+  intvec assignment = 0:nlinks;  // link number i is currently doing job number assignment[i]
+  int pid;
+  for(i = 1; i <= nlinks; i++)
+  {
+    write(l(i), quote(execute("def result;")));
+    read(l(i));
+    write(l(i), quote(execute("list currentargs;")));
+    read(l(i));
+    if(status(l(i), "mode", "fork"))
+    {
+      write(l(i), quote(currentargs = args[eval(k)]));
+    }
+    else
+    {
+      write(l(i), quote(currentargs = eval(args[k])));
+    }
+    read(l(i));
+    if(maxmems[k] > 0)
+    {
+      m = i;
+      for(j = 1; j <= nservers; j++)
+      {
+        if(servers[j][2] > m)
+        {
+          server = servers[j][1];
+          break;
+        }
+        else
+        {
+          m = m-servers[j][2];
+        }
+      }
+      write(l(i), quote(system("pid")));
+      pid = read(l(i));
+      write(mempatrol, list(server, pid, i, maxmems[k]));
+    }
+    write(l(i), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
+    assignment[i] = k;
+    k++;
+  }
+
   // distribute the rest of the work
   list results;
   for(i = njobs; i > 0; i--)
   {
-    results[i] = list();
+    results[i] = list();  // TODO: What if the result of one of the commands is
+                          // list()?
   }
   int nfinished;  // the number of finished jobs
   int wait;   // the index of the link which is finished, or 0 for timeout
@@ -237,19 +320,53 @@ proc doInParWaitN(list commands, list args, int N, list #)
     }
     if(wait)
     {
-      read(l(wait));
-      write(l(wait), quote(result));
-      results[assignment[wait]] = read(l(wait));
-      nfinished++;
-      if(status(l(k), "mode", "fork"))
+      if(wait == nlinks+1)
       {
-        write(l(k), quote(currentargs = args[eval(k)]));
+        wait = read(mempatrol);
+        close(l(wait));
+        open(l(wait));
+        results[assignment[wait]] = "out of memory";
+        nkilled++;
       }
       else
       {
-        write(l(k), quote(currentargs = eval(args[k])));
+        read(l(wait));
+        write(l(wait), quote(result));
+        results[assignment[wait]] = read(l(wait));
+        if(maxmems[assignment[wait]] > 0)
+        {
+          write(mempatrol, assignment[wait]);
+        }
+        nfinished++;
+      }
+      if(status(l(wait), "mode", "fork"))
+      {
+        write(l(wait), quote(currentargs = args[eval(k)]));
+      }
+      else
+      {
+        write(l(wait), quote(currentargs = eval(args[k])));
       }
       read(l(wait));
+      if(maxmems[k] > 0)
+      {
+        m = wait;
+        for(j = 1; j <= nservers; j++)
+        {
+          if(servers[j][2] > m)
+          {
+            server = servers[j][1];
+            break;
+          }
+          else
+          {
+            m = m-servers[j][2];
+          }
+        }
+        write(l(wait), quote(system("pid")));
+        pid = read(l(wait));
+        write(mempatrol, list(server, pid, wait, maxmems[k]));
+      }
       write(l(wait), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
       assignment[wait] = k;
       k++;
@@ -260,8 +377,9 @@ proc doInParWaitN(list commands, list args, int N, list #)
     }
   }
 
-  // collect the rest of the results and close all links
-  while(nfinished < N)
+
+  // collect the rest of the results
+  while(nfinished < N && nfinished+nkilled < njobs)
   {
     if(timeout == 0)
     {
@@ -273,16 +391,32 @@ proc doInParWaitN(list commands, list args, int N, list #)
     }
     if(wait)
     {
-      read(l(wait));
-      write(l(wait), quote(result));
-      results[assignment[wait]] = read(l(wait));
-      nfinished++;
+      if(wait == nlinks+1)
+      {
+        wait = read(mempatrol);
+        close(l(wait));
+        results[assignment[wait]] = "out of memory";
+        nkilled++;
+      }
+      else
+      {
+        read(l(wait));
+        write(l(wait), quote(result));
+        results[assignment[wait]] = read(l(wait));
+        if(maxmems[assignment[wait]] > 0)
+        {
+          write(mempatrol, assignment[wait]);
+        }
+        nfinished++;
+      }
     }
     else
     {
       break;
     }
   }
+
+  //close all links
   for(i = 1; i <= nlinks; i++)
   {
     if(status(l(i), "read", "ready"))
@@ -293,29 +427,39 @@ proc doInParWaitN(list commands, list args, int N, list #)
     }
     close(l(i));
   }
+  if(havemaxmem)
+  {
+    close(mempatrol);
+  }
 
   system("--ticks-per-sec", oldtimerresolution);
   return(results);
 }
 
-proc doInParWaitFirst(list commands, list args, list #)
+proc parallelWaitFirst(list commands, list args, list #)
 {
   return(doInParWaitN(commands, args, 1, #));
 }
 
-proc doInParWaitAll(list commands, list args, list #)
+proc parallelWaitAll(def commands, list args, list #)
 {
-  return(doInParWaitN(commands, args, size(commands), #));
-}
-
-proc doInParWaitAllSingleCmd(string cmd, list args, list #)
-{
-  list commands;
-  for(int i = size(args); i > 0; i--)
+  if(typeof(commands) != "list" && typeof(commands) != "string")
   {
-    commands[i] = cmd;
+    ERROR("invalid type of first argument");
   }
-  return(doInParWaitAll(commands, args, #));
+  if(typeof(commands) == "list")
+  {
+    return(doInParWaitN(commands, args, size(args), #));
+  }
+  else
+  {
+    list cmds;
+    for(int i = size(args); i > 0; i--)
+    {
+      cmds[i] = commands;
+    }
+    return(doInParWaitN(cmds, args, size(args), #));
+  }
 }
 
 proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
@@ -323,4 +467,94 @@ proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
 }
 
 /* worker farm */
-proc Create () {}
+proc Create() {}
+
+/* auxiliary procedures */
+proc watchlinks()
+{
+  list parent = list(mempatrol);
+  list watchedlinks;
+  int wait;
+  int i, sys;
+  while(1)
+  {
+    if(size(watchedlinks) == 0)
+    {
+      waitall(parent);
+      wait = 1;
+    }
+    else
+    {
+      wait = waitall(parent, 10000);
+    }
+    if(wait)
+    {
+      def query = read(mempatrol);
+      if(typeof(query) == "list")
+      {
+        watchedlinks = insert(watchedlinks, query);
+      }
+      else // in this case, typeof(query) is assumed to be "int", the
+           // index of the link
+      {
+        for(i = size(watchedlinks); i > 0; i--)
+        {
+          if(watchedlinks[i][3] == query)
+          {
+            watchedlinks = delete(watchedlinks, i);
+            break;
+          }
+        }
+      }
+    }
+    for(i = size(watchedlinks); i > 0; i--)
+    {
+      if(getusedmemory(watchedlinks[i][1], watchedlinks[i][2]) > watchedlinks[i][4])
+      {
+        if(watchedlinks[i][1] == "localhost")
+        {
+          sys = system("sh", "kill "+string(watchedlinks[i][2]));
+        }
+        else
+        {
+          sys = system("sh", "ssh "+watchedlinks[i][1]+" kill "
+                             +string(watchedlinks[i][2]));
+        }
+        write(mempatrol, watchedlinks[i][3]);
+        watchedlinks = delete(watchedlinks, i);
+      }
+    }
+  }
+}
+
+proc getusedmemory(string server, int pid)
+{
+  string s;
+  if(server == "localhost")
+  {
+    s = read("|: grep VmSize /proc/"+string(pid)+"/status "+
+             "| awk '{ print $2; }'");
+  }
+  else
+  {
+    s = read("|: ssh "+server+" grep VmSize /proc/"+string(pid)+"/status "+
+             "| awk '{ print $2; }'");
+  }
+  bigint b;
+  execute("b = "+s+";");
+  int i = int(b/1000);
+  return(i);
+}
+
+/*
+ring r = 0,(x,y,z),lp;
+ideal i = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
+ideal j = x;
+ideal k = y;
+ideal l = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
+// intvec mem = 10,0,0,100;
+intvec mem = 50,0,0,100;
+list commands = list("std", "std", "std", "std");
+list args = list(list(i), list(j), list(k), list(l));
+doInParWaitN(commands, args, 3, "ssi", list(list("bobesch", 2)), mem);
+*/
