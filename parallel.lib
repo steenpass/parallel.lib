@@ -143,11 +143,14 @@ proc parallelWaitN(list commands, list args, int N, list #)
              +newline+"is greater than the number of available cores");
       }
     }
-    if(system("sh", "ssh "+servers[i][1]+
-                    " 'test -e `which "+servers[i][3]+"`'"))
+    if(servers[i][1] != "localhost")
     {
-      ERROR("\""+servers[i][3]+"\" was not found on"
-           +"\""+servers[i][1]+"\".");
+      if(system("sh", "ssh "+servers[i][1]+
+                      " 'test -e `which "+servers[i][3]+"`'"))
+      {
+        ERROR("\""+servers[i][3]+"\" was not found on"
+             +"\""+servers[i][1]+"\".");
+      }
     }
   }
   if(size(maxmems) != njobs)
@@ -318,6 +321,10 @@ proc parallelWaitN(list commands, list args, int N, list #)
     {
       wait = waitfirst(links, timeout-(rtimer-t));
     }
+    if(wait == -1)
+    {
+      ERROR("All links crashed.");
+    }
     if(wait)
     {
       if(wait == nlinks+1)
@@ -388,6 +395,10 @@ proc parallelWaitN(list commands, list args, int N, list #)
     else
     {
       wait = waitfirst(links, timeout-(rtimer-t));
+    }
+    if(wait == -1)
+    {
+      ERROR("All links crashed.");
     }
     if(wait)
     {
@@ -480,12 +491,15 @@ proc watchlinks()
   {
     if(size(watchedlinks) == 0)
     {
-      waitall(parent);
-      wait = 1;
+      wait = waitall(parent);
     }
     else
     {
       wait = waitall(parent, 10000);
+    }
+    if(wait == -1)
+    {
+      ERROR("The main process crashed.");
     }
     if(wait)
     {
@@ -546,15 +560,13 @@ proc getusedmemory(string server, int pid)
   return(i);
 }
 
-/*
 ring r = 0,(x,y,z),lp;
 ideal i = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
 ideal j = x;
 ideal k = y;
 ideal l = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
-// intvec mem = 10,0,0,100;
 intvec mem = 50,0,0,100;
 list commands = list("std", "std", "std", "std");
 list args = list(list(i), list(j), list(k), list(l));
-doInParWaitN(commands, args, 3, "ssi", list(list("bobesch", 2)), mem);
-*/
+//doInParWaitN(commands, args, 3, "ssi", list(list("bobesch", 2)), mem);
+;
