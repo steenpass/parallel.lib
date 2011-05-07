@@ -473,6 +473,7 @@ proc parallelWaitAll(def commands, list args, list #)
   }
 }
 
+/// http://arxiv.org/abs/1005.5663v2
 proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
 {
 }
