@@ -15,7 +15,7 @@ PROCEDURES:
            parallelWaitFirst(list commands, list args, list #)
              execute several jobs in parallel, wait for the first to finish
            parallelWaitAll(def commands, list args, list #)
-             execute several jobs in parallel, wair for all of them to finish
+             execute several jobs in parallel, wait for all of them to finish
 ";
 
 proc parallelWaitN(list commands, list args, int N, list #)
@@ -503,6 +503,18 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   system("--ticks-per-sec", oldtimerresolution);
   return(results);
 }
+example
+{
+  "EXAMPLE:"; echo = 2;
+  LIB "primdec.lib";
+  ring r = 0, (x,y,z), lp;
+  ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
+  ideal j = z8+z6+4z5+4z3+4z2+4, y-z2;
+  list commands = list("std", "primdecGTZ", "primdecSY", "std", "primdecGTZ",
+                       "primdecSY");
+  list args = list(list(i), list(i), list(i), list(j), list(j), list(j));
+  parallelWaitN(commands, args, 3);
+}
 
 proc parallelWaitFirst(list commands, list args, list #)
 "USAGE:  parallelWaitFirst(commands, args[, timeout, linktype, servers,
@@ -522,6 +534,16 @@ KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
 EXAMPLE:  @code{example parallelWaitFirst;} shows an example."
 {
   return(parallelWaitN(commands, args, 1, #));
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  LIB "primdec.lib";
+  ring r = 0, (x,y,z), lp;
+  ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
+  list commands = list("primdecGTZ", "primdecSY");
+  list args = list(list(i), list(i));
+  parallelWaitFirst(commands, args);
 }
 
 proc parallelWaitAll(def commands, list args, list #)
@@ -560,6 +582,17 @@ EXAMPLE:  @code{example parallelWaitAll;} shows an example."
     }
     return(parallelWaitN(cmds, args, size(args), #));
   }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0, (x,y,z), dp;
+  ideal i1 = z8+z6+4z5+4z3+4z2+4, y-z2;
+  ideal i2 = x10+x9y2, y8-x2y7;
+  ideal i3 = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
+  list commands = "std";
+  list args = list(list(i1), list(i2), list(i3));
+  parallelWaitAll(commands, args);
 }
 
 // TODO
