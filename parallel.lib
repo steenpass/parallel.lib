@@ -1,3 +1,22 @@
+version="$Id$";
+category="General purpose";
+info="
+LIBRARY:   parallel.lib  An Interface for Parallelization
+AUTHOR:    Andreas Steenpass, email: steenpass@mathematik.uni-kl.de
+
+SEE ALSO:  link, modstd_lib, assprimes_lib
+
+KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
+           Skeletons for parallelization; Distributed computing
+
+PROCEDURES:
+           parallelWaitN(list commands, list args, int N, list #)
+             execute several jobs in parallel, wait for N of them to finish
+           parallelWaitFirst(list commands, list args, list #)
+             execute several jobs in parallel, wait for the first to finish
+           parallelWaitAll(def commands, list args, list #)
+             execute several jobs in parallel, wair for all of them to finish
+";
 
 proc parallelWaitN(list commands, list args, int N, list #)
 {
@@ -474,16 +493,16 @@ proc parallelWaitAll(def commands, list args, list #)
 
 // TODO
 /// http://arxiv.org/abs/1005.5663v2
-proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
+static proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
 {
 }
 
 // TODO
 /* worker farm */
-proc Create() {}
+static proc Create() {}
 
 /* auxiliary procedures */
-proc watchlinks()
+static proc watchlinks()
 {
   list parent = list(mempatrol);
   list watchedlinks;
@@ -543,7 +562,7 @@ proc watchlinks()
   }
 }
 
-proc getusedmemory(string server, int pid)
+static proc getusedmemory(string server, int pid)
 {
   string s;
   if(server == "localhost")
