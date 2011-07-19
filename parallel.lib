@@ -1,4 +1,3 @@
-option(noredefine);
 
 proc parallelWaitN(list commands, list args, int N, list #)
 {
@@ -473,11 +472,13 @@ proc parallelWaitAll(def commands, list args, list #)
   }
 }
 
+// TODO
 /// http://arxiv.org/abs/1005.5663v2
 proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
 {
 }
 
+// TODO
 /* worker farm */
 proc Create() {}
 
@@ -560,14 +561,3 @@ proc getusedmemory(string server, int pid)
   int i = int(b/1000);
   return(i);
 }
-
-ring r = 0,(x,y,z),lp;
-ideal i = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
-ideal j = x;
-ideal k = y;
-ideal l = 3x3y+x3+xy3+y2z2,2x3z-xy-xz3-y4-z2,2x2yz-2xy2+xz2-y4;
-intvec mem = 50,0,0,100;
-list commands = list("std", "std", "std", "std");
-list args = list(list(i), list(j), list(k), list(l));
-//doInParWaitN(commands, args, 3, "ssi", list(list("bobesch", 2)), mem);
-;
