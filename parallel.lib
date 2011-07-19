@@ -24,6 +24,8 @@ proc parallelWaitN(list commands, list args, int N, list #)
          linktype string, servers list, maxmemory intvec
 RETURN:  a list, containing the results of commands[i] applied to arg[i],
          i = 1, ..., size(commands).
+         @* The entries of the list commands must be strings.
+         @* The entries of the list args must be lists.
          @* The procedure waits for N jobs to finish.
          @* An optional timeout in ms can be provided. Default is 0 which
             disables the timeout.
@@ -503,11 +505,43 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
 }
 
 proc parallelWaitFirst(list commands, list args, list #)
+"USAGE:  parallelWaitFirst(commands, args[, timeout, linktype, servers,
+         maxmemory]); commands list, args list, timeout int,
+         linktype string, servers list, maxmemory intvec
+RETURN:  a list, containing at least one (if no timeout occurs) of the results
+         of commands[i] applied to arg[i], i = 1, ..., size(commands).
+         @* The command
+         @code{parallelWaitFirst(list commands, list args, list #)} is
+         synonymous to
+         @code{parallelWaitN(list commands, list args, 1, list #)}. See
+         @ref{parallelWaitN} for details on optional arguments and other
+         remarks.
+SEE ALSO: Ssi links, MP links, waitfirst
+KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
+          Skeletons for parallelization; Distributed computing
+EXAMPLE:  @code{example parallelWaitFirst;} shows an example."
 {
-  return(doInParWaitN(commands, args, 1, #));
+  return(parallelWaitN(commands, args, 1, #));
 }
 
 proc parallelWaitAll(def commands, list args, list #)
+"USAGE:  parallelWaitAll(commands, args[, timeout, linktype, servers,
+         maxmemory]); commands list or string, args list, timeout int,
+         linktype string, servers list, maxmemory intvec
+RETURN:  a list, containing the results of commands[i] applied to arg[i],
+         i = 1, ..., size(commands).
+         @* The command
+         @code{parallelWaitAll(list commands, list args, list #)} is
+         synonymous to
+         @code{parallelWaitN(list commands, list args, size(args), list #)}. See
+         @ref{parallelWaitN} for details on optional arguments and other
+         remarks.
+         If commands is of type string, this is a shortcut for a list of size
+         @code{size(args)} whose entries are just this string.
+SEE ALSO: Ssi links, MP links, waitall
+KEYWORDS: parallelWaitAll; Parallelization; Links, user interface;
+          Skeletons for parallelization; Distributed computing
+EXAMPLE:  @code{example parallelWaitAll;} shows an example."
 {
   if(typeof(commands) != "list" && typeof(commands) != "string")
   {
@@ -515,7 +549,7 @@ proc parallelWaitAll(def commands, list args, list #)
   }
   if(typeof(commands) == "list")
   {
-    return(doInParWaitN(commands, args, size(args), #));
+    return(parallelWaitN(commands, args, size(args), #));
   }
   else
   {
@@ -524,7 +558,7 @@ proc parallelWaitAll(def commands, list args, list #)
     {
       cmds[i] = commands;
     }
-    return(doInParWaitN(cmds, args, size(args), #));
+    return(parallelWaitN(cmds, args, size(args), #));
   }
 }
 
