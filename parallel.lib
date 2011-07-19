@@ -1,3 +1,4 @@
+////////////////////////////////////////////////////////////////////
 version="$Id$";
 category="General purpose";
 info="
@@ -10,12 +11,12 @@ KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
            Skeletons for parallelization; Distributed computing
 
 PROCEDURES:
-           parallelWaitN(list commands, list args, int N, list #)
-             execute several jobs in parallel, wait for N of them to finish
-           parallelWaitFirst(list commands, list args, list #)
-             execute several jobs in parallel, wait for the first to finish
-           parallelWaitAll(def commands, list args, list #)
-             execute several jobs in parallel, wait for all of them to finish
+  parallelWaitN(...)     execute several jobs in parallel,
+                         wait for N of them to finish
+  parallelWaitFirst(...) execute several jobs in parallel,
+                         wait for the first to finish
+  parallelWaitAll(...)   execute several jobs in parallel,
+                         wait for all of them to finish
 ";
 
 proc parallelWaitN(list commands, list args, int N, list #)
@@ -354,7 +355,8 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
       pid = read(l(i));
       write(mempatrol, list(server, pid, i, maxmems[k]));
     }
-    write(l(i), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
+    write(l(i), quote(execute("result = "+eval(commands[k])
+                                    +"(currentargs[1..size(currentargs)]);")));
     assignment[i] = k;
     k++;
   }
@@ -431,7 +433,8 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
         pid = read(l(wait));
         write(mempatrol, list(server, pid, wait, maxmems[k]));
       }
-      write(l(wait), quote(execute("result = "+eval(commands[k])+"(currentargs[1..size(currentargs)]);")));
+      write(l(wait), quote(execute("result = "+eval(commands[k])
+                                     +"(currentargs[1..size(currentargs)]);")));
       assignment[wait] = k;
       k++;
     }
