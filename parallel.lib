@@ -30,31 +30,32 @@ RETURN:  a list, containing the results of commands[i] applied to arg[i],
          @* The procedure waits for N jobs to finish.
          @* An optional timeout in ms can be provided. Default is 0 which
             disables the timeout.
-         @* Supported linktypes are up to now "ssi" and "mp", see
+         @* Supported linktypes are up to now \"ssi\" and \"mp\", see
             @ref{Ssi links} and @ref{MP links}.
          @* Each server is given by a list containing the address of the server,
             the number of cores to use on this server and the command to start
-            Singul@code{list("myserver", [nb. of cores on myserver],
-            "Singular")}ar. If the address is "localhost", the processes will be
-            generated on the same machine using forks. If the command to start
-            Singular is "" (the empty string), "Singular" will be  used. Default
-            is @code{list("localhost", system("cpu"), "")}. There are some
-            obvious shortcuts for servers, e.g. "myserver" is a shortcut for
-            @code{list("myserver", [nb. of cores on myserver], "")}, or 3 for
-            @code{list("localhost", 3, "")}.
+            Singul@code{list(\"myserver\", [nb. of cores on myserver],
+            \"Singular\")}. If the address is \"localhost\", the processes will
+            be generated on the same machine using forks. If the command to
+            start Singular is \"\" (the empty string), \"Singular\" will be
+            used. Default is @code{list(\"localhost\", system(\"cpu\"), \"\")}.
+            There are some obvious shortcuts for servers, e.g. \"myserver\" is
+            a shortcut for
+            @code{list(\"myserver\", [nb. of cores on myserver], \"\")}, or 3
+            for @code{list(\"localhost\", 3, \"\")}.
          @* If an intvec maxmemory of size @code{size(commands)} is given, the
             i-th job will be killed if it uses more than maxmemory[i] MB of
             memory. If maxmemory[i] is 0, there will be no restraint for the
             i-th job. Default is @code{0:size(commands)}.
 NOTE:       The returned list may contain more than N results if several jobs
-            finished "at the same time". It may contain less than N results in
+            finished \"at the same time\". It may contain less than N results in
             the case of timeout or errors occurring.
          @* MP links do not work with a 64 bit version of Singular. If you want
             to use MP links, make sure that MP is available. This can be checked
-            by the Singular command @code{system("with", "MP");}.
-         @* The check whether the jobs exceed the memory sizes given by maxmemory
-            is only done from time to time. This feature is experimental and
-            should be used with care.
+            by the Singular command @code{system(\"with\", \"MP\");}.
+         @* The check whether the jobs exceed the memory sizes given by
+            maxmemory is only done from time to time. This feature is
+            experimental and should be used with care.
 SEE ALSO: Ssi links, MP links, waitfirst, waitall
 KEYWORDS: parallelWaitN; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
