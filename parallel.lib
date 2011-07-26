@@ -3,9 +3,9 @@ version="$Id$";
 category="General purpose";
 info="
 LIBRARY:   parallel.lib  An Interface for Parallelization
-AUTHOR:    Andreas Steenpass, email: steenpass@mathematik.uni-kl.de
+AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
-SEE ALSO:  link, modstd_lib, assprimes_lib
+SEE ALSO:  link, modstd_lib, assprimeszerodim_lib
 
 KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
            Skeletons for parallelization; Distributed computing
@@ -34,8 +34,7 @@ RETURN:  a list, containing the results of commands[i] applied to arg[i],
             @ref{Ssi links} and @ref{MP links}.
          @* Each server is given by a list containing the address of the server,
             the number of cores to use on this server and the command to start
-            Singul@code{list(\"myserver\", [nb. of cores on myserver],
-            \"Singular\")}. If the address is \"localhost\", the processes will
+            Singular. If the address is \"localhost\", the processes will
             be generated on the same machine using forks. If the command to
             start Singular is \"\" (the empty string), \"Singular\" will be
             used. Default is @code{list(\"localhost\", system(\"cpu\"), \"\")}.
@@ -545,7 +544,6 @@ EXAMPLE:  @code{example parallelWaitFirst;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
-  LIB "parallel.lib";
   LIB "primdec.lib";
   ring r = 0, (x,y,z), lp;
   ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
@@ -594,7 +592,6 @@ EXAMPLE:  @code{example parallelWaitAll;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
-  LIB "parallel.lib";
   ring r = 0, (x,y,z), dp;
   ideal i1 = z8+z6+4z5+4z3+4z2+4, y-z2;
   ideal i2 = x10+x9y2, y8-x2y7;
