@@ -66,7 +66,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   int t = rtimer;
 
   // auxiliary variables
-  int i, j, m;
+  int i, j, m, tt;
 
   // read optional parameters
   list defaultserver = list("localhost", system("cpu"), "");
@@ -177,11 +177,19 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     {
       if(linktype == "ssi")
       {
-        link lcpu(i) = "ssi:tcp "+servers[i][1]+" "+system("Singular");
+        link lcpu(i) = "ssi:tcp "+servers[i][1]+":"+servers[i][3];
       }
       else
       {
-        link lcpu(i) = "MPtcp:launch "+servers[i][1];
+        if(program == "")
+        {
+          link lcpu(i) = "MPtcp:launch+" --MPhost "+servers[i][1];
+        }
+        else
+        {
+          link lcpu(i) = "MPtcp:launch+" --MPhost "+servers[i][1]
+            +" --MPapplication "+servers[i][3];
+        }
       }
       open(lcpu(i));
       write(lcpu(i), quote(system("cpu")));
@@ -381,7 +389,16 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     }
     else
     {
-      wait = waitfirst(links, timeout-(rtimer-t));
+      tt = timeout-(rtimer-t);
+      if(tt < 0)
+      {
+        wait = waitfirst(links, 0);
+        wait = 0;
+      }
+      else
+      {
+        wait = waitfirst(links, tt);
+      }
     }
     if(wait == -1)
     {
@@ -456,7 +473,16 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     }
     else
     {
-      wait = waitfirst(links, timeout-(rtimer-t));
+      tt = timeout-(rtimer-t);
+      if(tt < 0)
+      {
+        wait = waitfirst(links, 0);
+        wait = 0;
+      }
+      else
+      {
+        wait = waitfirst(links, tt);
+      }
     }
     if(wait == -1)
     {
@@ -511,7 +537,6 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
-  LIB "parallel.lib";
   LIB "primdec.lib";
   ring r = 0, (x,y,z), lp;
   ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
@@ -524,8 +549,8 @@ example
 
 proc parallelWaitFirst(list commands, list args, list #)
 "USAGE:  parallelWaitFirst(commands, args[, timeout, linktype, servers,
-         maxmemory]); commands list, args list, timeout int,
-         linktype string, servers list, maxmemory intvec
+         maxmemory]); commands list, args list, timeout int, linktype string,
+         servers list, maxmemory intvec
 RETURN:  a list, containing at least one (if no timeout occurs) of the results
          of commands[i] applied to arg[i], i = 1, ..., size(commands).
          @* The command
