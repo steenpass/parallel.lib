@@ -320,10 +320,13 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   // distribute work to the links
   k = 1; // from here on, k is the index of the next job which must be
          // distributed to some link
-  intvec assignment = 0:nlinks;  // link number i is currently doing job number assignment[i]
+  intvec assignment = 0:nlinks;  // link number i is currently doing
+                                 // job number assignment[i]
   int pid;
   for(i = 1; i <= nlinks; i++)
   {
+    write(l(i), quote(execute("option(noredefine);")));
+    read(l(i));
     write(l(i), quote(execute("def result;")));
     read(l(i));
     write(l(i), quote(execute("list currentargs;")));
@@ -434,7 +437,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
         pid = read(l(wait));
         write(mempatrol, list(server, pid, wait, maxmems[k]));
       }
-      write(l(wait), quote(execute("result = "+eval(commands[k])
+      write(l(wait), quote(execute("def result = "+eval(commands[k])
                                      +"(currentargs[1..size(currentargs)]);")));
       assignment[wait] = k;
       k++;
@@ -444,7 +447,6 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
       break;
     }
   }
-
 
   // collect the rest of the results
   while(nfinished < N && nfinished+nkilled < njobs)
@@ -510,10 +512,11 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
+  LIB "parallel.lib";
   LIB "primdec.lib";
   ring r = 0, (x,y,z), lp;
-  ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
-  ideal j = z8+z6+4z5+4z3+4z2+4, y-z2;
+  ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
+  ideal j = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
   list commands = list("std", "primdecGTZ", "primdecSY", "std", "primdecGTZ",
                        "primdecSY");
   list args = list(list(i), list(i), list(i), list(j), list(j), list(j));
@@ -542,6 +545,7 @@ EXAMPLE:  @code{example parallelWaitFirst;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
+  LIB "parallel.lib";
   LIB "primdec.lib";
   ring r = 0, (x,y,z), lp;
   ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
@@ -590,13 +594,14 @@ EXAMPLE:  @code{example parallelWaitAll;} shows an example."
 example
 {
   "EXAMPLE:"; echo = 2;
+  LIB "parallel.lib";
   ring r = 0, (x,y,z), dp;
   ideal i1 = z8+z6+4z5+4z3+4z2+4, y-z2;
   ideal i2 = x10+x9y2, y8-x2y7;
-  ideal i3 = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
-  list commands = "std";
+  ideal i3 = x3-2xy, x2y-2y2+x;
+  string command = "std";
   list args = list(list(i1), list(i2), list(i3));
-  parallelWaitAll(commands, args);
+  parallelWaitAll(command, args);
 }
 
 // TODO
@@ -652,7 +657,8 @@ static proc watchlinks()
     }
     for(i = size(watchedlinks); i > 0; i--)
     {
-      if(getusedmemory(watchedlinks[i][1], watchedlinks[i][2]) > watchedlinks[i][4])
+      if(getusedmemory(watchedlinks[i][1], watchedlinks[i][2])
+           > watchedlinks[i][4])
       {
         if(watchedlinks[i][1] == "localhost")
         {
