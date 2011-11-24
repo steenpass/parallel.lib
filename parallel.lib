@@ -650,7 +650,7 @@ example
 
 // TODO
 /// http://arxiv.org/abs/1005.5663v2
-static proc doModular(command, args, proc deleteUnlucksPrimes, proc testInChar0)
+static proc doModular(string command, list args, def deleteUnluckyPrimes, def pTest, def finalTest)
 {
 }
 
