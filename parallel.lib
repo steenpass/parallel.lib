@@ -739,6 +739,9 @@ static proc getusedmemory(string server, int pid)
   return(i);
 }
 
+
+/* This is also included in semaphore.lib, so it can be deleted once
+ * parallelWaitN is rewritten */
 static proc argsToString(string name, int length)
 {
   string arglist;

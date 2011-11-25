@@ -1,0 +1,164 @@
+////////////////////////////////////////////////////////////////////
+version="$Id$";
+category="General purpose";
+info="
+LIBRARY:   semaphore.lib  An Interface for Tasks Using Semaphores
+AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
+
+SEE ALSO:  link, parallel_lib
+
+KEYWORDS:  Semaphores; Parallelization; Links, user interface
+
+PROCEDURES:
+  startTask(string, list)   start a new task
+  stopTask(link)            stop the task
+  waitTask(link)            wait for the task and pick up the result
+  pollTask(link)            pick up the result, if task is ready;
+                            return immediately, otherwise
+";
+
+/* initialize the semaphore */
+static proc mod_init()
+{
+    int tmp = system("semaphore", "init", 0, system("cpu"));
+}
+
+proc startTask(string command, list arguments)
+"USAGE:   startTask(command, arguments); command string, arguments list
+RETURN:   a link l, running the computation which applies command to arguments
+          as soon as there are free resources.
+SEE ALSO: stopTask, waitTask, pollTask, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example startTask; shows an example"
+{
+    link l = "ssi:fork";
+    open(l);
+    write(l, quote(startTask_child(command, arguments)));
+    return(l);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring r = 0, (x,y), dp;
+    ideal i = x, x+y;
+    link l = startTask("std", list(i));
+    waitTask(l);
+}
+
+/* This procedure has to be started within the child after forking. */
+static proc startTask_child(string command, list arguments)
+{
+    def result;
+    int tmp = system("semaphore", "acquire", 0);
+    execute("result = "+command+"("+argsToString("arguments", size(arguments))
+        +");");
+    export(result);
+    tmp = system("semaphore", "release", 0);
+}
+
+proc stopTask(link l)
+"USAGE:   stopTask(l); l link
+RETURN:   none. Stops the task as soon as possible.
+SEE ALSO: startTask, waitTask, pollTask, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example stopTask; shows an example"
+{
+    close(l);
+    // At the following line, race conditions might occur.
+    int tmp = system("semaphore", "release", 0);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring r = 0, (x,y,z), lp;
+    ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
+    link l = startTask("std", list(i));
+    system("sh", "sleep 3s");
+    stopTask(l);
+}
+
+proc waitTask(link l)
+"USAGE:   waitTask(l); l link
+RETURN:   the result of the task. This command is eventually blocking.
+SEE ALSO: startTask, stopTask, pollTask, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example waitTask; shows an example"
+{
+    int not_ready;
+    int tmp;
+    if (!status(l, "read", "ready")) {
+        tmp = system("semaphore", "release", 0);
+        not_ready = 1;
+    }
+    read(l);
+    if (not_ready) {
+        tmp = system("semaphore", "acquire", 0);
+    }
+    write(l, quote(result));
+    def result = read(l);
+    close(l);
+    return(result);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring r = 0, (x,y), dp;
+    ideal i = x, x+y;
+    link l = startTask("std", list(i));
+    waitTask(l);
+}
+
+proc pollTask(link l)
+"USAGE:   pollTask(l); l link
+RETURN:   a list result. result[1] is 1 if the task is finished and 0
+          otherwise. If the task is finished, then result[2] is the
+          result of the task.
+SEE ALSO: startTask, stopTask, waitTask, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example pollTask; shows an example"
+{
+    list result;
+    if (status(l, "read", "ready")) {
+        result[1] = 1;
+        result[2] = waitTask(l);
+    }
+    else {
+        result[1] = 0;
+    }
+    return(result);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring r = 0, (x,y,z), lp;
+    ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
+    link l1 = startTask("std", list(i));
+    system("sh", "sleep 3s");
+    // the task is not yet finished
+    pollTask(l1);
+    stopTask(l1);
+    ring s = 0, (x,y), dp;
+    ideal i = x, x+y;
+    link l2 = startTask("std", list(i));
+    system("sh", "sleep 1s");
+    // the task is finished
+    pollTask(l2);
+}
+
+/ * construct the string "name[1], name[2], name[3], ..., name[length]" */
+static proc argsToString(string name, int length)
+{
+    string arglist;
+    if (length > 0) {
+        arglist = name+"[1]";
+    }
+    int i;
+    for (i = 2; i <= length; i++) {
+        arglist = arglist+", "+name+"["+string(i)+"]";
+    }
+    return(arglist);
+}
