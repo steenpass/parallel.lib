@@ -650,8 +650,8 @@ example
 
 // TODO
 /// http://arxiv.org/abs/1005.5663v2
-proc doModular(string command, list args, def deleteUnluckyPrimes,
-  def pTest, def finalTest, list #)
+proc doModular(string command, list args, def primeTest,
+  def deleteUnluckyPrimes, def pTest, def finalTest, list #)
 {
   /* auxiliary variables */
   int i;
@@ -683,6 +683,9 @@ proc doModular(string command, list args, def deleteUnluckyPrimes,
   if (n1 < 1 || n2 < 1 || growths < 1) {
     ERROR("wrong optional parameters");
   }
+  if (typeof(primeTest) != "proc" && typeof(primeTest) != "string") {
+    ERROR("incorrect argument primeTest");
+  }
   if (typeof(deleteUnluckyPrimes) != "proc"
     && typeof(deleteUnluckyPrimes) != "string") {
     ERROR("incorrect argument deleteUnluckyPrimes");
@@ -695,6 +698,15 @@ proc doModular(string command, list args, def deleteUnluckyPrimes,
   }
 
   /* define procs deleteUnluckyPrimes, pTest, and finalTest */
+  if (typeof(primeTest) == "string") {
+    if (primeTest == "") {
+      kill primeTest;
+      proc primeTest = primeTest_default;
+    }
+    else {
+      ERROR("incorrect argument primeTest");
+    }
+  }
   if (typeof(deleteUnluckyPrimes) == "string") {
     if (deleteUnluckyPrimes == "") {
       kill deleteUnluckyPrimes;
@@ -733,10 +745,10 @@ proc doModular(string command, list args, def deleteUnluckyPrimes,
   while(1) {
     // compute list of primes
     if (size(primes) == 0) {
-      primes = primeList(n1);
+      primes = primeList(n1, primeTest, args);
     }
     else {
-      primes = primeList(n2, primes[1]);
+      primes = primeList(n2, primeTest, args, primes[1]);
       n2 = n2*growths;
     }
 
@@ -774,7 +786,7 @@ proc doModular(string command, list args, def deleteUnluckyPrimes,
   return(result);
 }
 
-static proc primeList(int n, list #)
+static proc primeList(int n, proc primeTest, list args, list #)
 {
   int i;
 
@@ -797,6 +809,10 @@ static proc primeList(int n, list #)
       ERROR("no more primes");
     }
     p = prime(p);
+    if (!primeTest(p, args)) {
+      p--;
+      continue;
+    }
     primes[i] = p;
     p--;
   }
@@ -821,6 +837,11 @@ static proc computeInCharP(string command, list args, int p)
   setring(br);
   def result = fetch(rp, result);
   return(list(result, p));
+}
+
+static proc primeTest_default(int p, list args)
+{
+  return(1);
 }
 
 static proc deleteUnluckyPrimes_default(list modresults)
