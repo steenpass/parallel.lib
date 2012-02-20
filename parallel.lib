@@ -657,11 +657,6 @@ proc doModular(string command, list args, def primeTest,
   int i;
 
   /* read optional parameters */
-  int adaptive;   // if non-zero, free resources will be used as they
-                  // become available
-  if(size(#) == 0) {
-    adaptive = 1;
-  }
   int ncores_available = NbModProcs();
   list defaults = list(ncores_available, ncores_available, 2);
   for(i = 1; i <= size(defaults); i++)
@@ -887,8 +882,7 @@ static proc finalTest_default
 
 static proc NbModProcs()
 {
-    // int available = system("semaphore", "getValue", 0)+1;
-    int available = system("cpu");
+    int available = system("semaphore", "get_value", 0)+1;
     int nb;
     if (available < 16) {
         nb = ((10 div available)+1-(10%available == 0))*available;
