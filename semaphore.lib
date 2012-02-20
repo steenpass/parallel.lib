@@ -64,9 +64,15 @@ SEE ALSO: startTask, waitTask, pollTask, parallel_lib
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example stopTask; shows an example"
 {
+    int not_ready;
+    if (!status(l, "read", "ready")) {
+        not_ready = 1;
+    }
     close(l);
-    // At the following line, race conditions might occur.
-    int tmp = system("semaphore", "release", 0);
+    if (not_ready) {
+        // At the following line, race conditions might occur.
+        int tmp = system("semaphore", "release", 0);
+    }
 }
 example
 {
