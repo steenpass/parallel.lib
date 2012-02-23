@@ -20,7 +20,7 @@ PROCEDURES:
 /* initialize the semaphore */
 static proc mod_init()
 {
-    int tmp = system("semaphore", "init", 0, system("cpu"));
+    int tmp = system("semaphore", "init", 0, system("cpu")-1);
 }
 
 proc startTask(string command, list arguments)
