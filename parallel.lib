@@ -9,7 +9,7 @@ OVERVIEW:
 This library provides tools to do several computations in parallel. They
 are aimed at ordinary Singular users as well as authors of Singular
 libraries.
-@* Even without this library, it is possible to do execute self-defined
+@* Even without this library, it is possible to execute self-defined
 Singular commands in parallel using @ref{links}, but the handling of
 such links can be quite tedious. With the pocedures described below,
 this can be done by one-line commands.
@@ -31,6 +31,8 @@ PROCEDURES:
   parallelWaitAll(...)   execute several jobs in parallel,
                          wait for all of them to finish
 ";
+
+LIB "semaphore.lib";
 
 proc parallelWaitN(list commands, list args, int N, list #)
 "USAGE:  parallelWaitN(commands, args, N[, timeout, linktype, servers,
@@ -257,300 +259,21 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     havemaxmem = havemaxmem+maxmems[i];
   }
 
-  // skip those cores which won't be needed
-  int nlinks;
-  for(i = 1; i <= nservers; i++)
-  {
-    if(nlinks+servers[i][2] <= njobs)
-    {
-      nlinks = nlinks+servers[i][2];
-    }
-    else
-    {
-      if(nlinks == njobs)
-      {
-        servers = list(servers[1..(i-1)]);
-      }
-      else
-      {
-        servers = list(servers[1..i]);
-        servers[i][2] = njobs-nlinks;
-        nlinks = njobs;
-      }
-      nservers = size(servers);
-    }
+  for(i = 1; i <= njobs; i++) {
+    link l(i) = startTask(commands[i], args[i]);
   }
-
-  // open the links
-  string server;
-  int ncores;
-  string program;
-  int k = 1;   // the index of the link
-  for(i = 1; i <= nservers; i++)
-  {
-    server = servers[i][1];
-    ncores = servers[i][2];
-    program = servers[i][3];
-    for(j = 1; j <= ncores; j++)
-    {
-      if(server == "localhost")
-      {
-        if(linktype == "ssi")
-        {
-          link l(k) = "ssi:fork";
-        }
-        else
-        {
-          link l(k) = "MPtcp:fork";
-        }
-      }
-      else
-      {
-        if(linktype == "ssi")
-        {
-          link l(k) = "ssi:tcp "+server+":"+program;
-        }
-        else
-        {
-          if(program == "")
-          {
-            link l(k) = "MPtcp:launch+" --MPhost "+server;
-          }
-          else
-          {
-            link l(k) = "MPtcp:launch+" --MPhost "+server
-              +" --MPapplication "+program;
-          }
-        }
-      }
-      open(l(k));
-      k++;
-    }
-  }
-  list links = list(l(1..nlinks));
-
-  // start a memory watchdog if needed
-  if(havemaxmem)
-  {
-    if(linktype == "ssi")
-    {
-      link mempatrol = "ssi:fork";
-    }
-    else
-    {
-      link mempatrol = "MPtcp:fork";
-    }
-    open(mempatrol);
-    write(mempatrol, quote(watchlinks()));
-    links = insert(links, mempatrol, nlinks);
-  }
-  int nkilled;   // the number of jobs killed by the mempatrol
-
-  // distribute work to the links
-  k = 1; // from here on, k is the index of the next job which must be
-         // distributed to some link
-  intvec assignment = 0:nlinks;  // link number i is currently doing
-                                 // job number assignment[i]
-  int pid;
-  for(i = 1; i <= nlinks; i++)
-  {
-    write(l(i), quote(execute("option(noredefine);")));
-    read(l(i));
-    write(l(i), quote(execute("def result;")));
-    read(l(i));
-    write(l(i), quote(execute("list currentargs;")));
-    read(l(i));
-    if(status(l(i), "mode", "fork"))
-    {
-      write(l(i), quote(currentargs = args[eval(k)]));
-    }
-    else
-    {
-      write(l(i), quote(currentargs = eval(args[k])));
-    }
-    read(l(i));
-    if(maxmems[k] > 0)
-    {
-      m = i;
-      for(j = 1; j <= nservers; j++)
-      {
-        if(servers[j][2] > m)
-        {
-          server = servers[j][1];
-          break;
-        }
-        else
-        {
-          m = m-servers[j][2];
-        }
-      }
-      write(l(i), quote(system("pid")));
-      pid = read(l(i));
-      write(mempatrol, list(server, pid, i, maxmems[k]));
-    }
-    write(l(i), quote(execute("result = "+eval(commands[k])
-      +"("+argsToString("currentargs", size(currentargs))+");")));
-    assignment[i] = k;
-    k++;
-  }
-
-  // distribute the rest of the work
+  list links = l(1..njobs);
+  int nfinished;
+  int wait;
   list results;
-  for(i = njobs; i > 0; i--)
-  {
-    results[i] = list();  // TODO: What if the result of one of the commands is
-                          // list()?
+  for(i = njobs; i > 0; i--) {
+    results[i] = list();
   }
-  int nfinished;  // the number of finished jobs
-  int wait;   // the index of the link which is finished, or 0 for timeout
-  while(k <= njobs && nfinished < N-1)
-  {
-    if(timeout == 0)
-    {
-      wait = waitfirst(links);
-    }
-    else
-    {
-      tt = timeout-(rtimer-t);
-      if(tt < 0)
-      {
-        wait = waitfirst(links, 0);
-        wait = 0;
-      }
-      else
-      {
-        wait = waitfirst(links, tt);
-      }
-    }
-    if(wait == -1)
-    {
-      ERROR("All links crashed.");
-    }
-    if(wait)
-    {
-      if(wait == nlinks+1)
-      {
-        wait = read(mempatrol);
-        close(l(wait));
-        open(l(wait));
-        results[assignment[wait]] = "out of memory";
-        nkilled++;
-      }
-      else
-      {
-        read(l(wait));
-        write(l(wait), quote(result));
-        results[assignment[wait]] = read(l(wait));
-        if(maxmems[assignment[wait]] > 0)
-        {
-          write(mempatrol, assignment[wait]);
-        }
-        nfinished++;
-      }
-      if(status(l(wait), "mode", "fork"))
-      {
-        write(l(wait), quote(currentargs = args[eval(k)]));
-      }
-      else
-      {
-        write(l(wait), quote(currentargs = eval(args[k])));
-      }
-      read(l(wait));
-      if(maxmems[k] > 0)
-      {
-        m = wait;
-        for(j = 1; j <= nservers; j++)
-        {
-          if(servers[j][2] > m)
-          {
-            server = servers[j][1];
-            break;
-          }
-          else
-          {
-            m = m-servers[j][2];
-          }
-        }
-        write(l(wait), quote(system("pid")));
-        pid = read(l(wait));
-        write(mempatrol, list(server, pid, wait, maxmems[k]));
-      }
-      write(l(wait), quote(execute("def result = "+eval(commands[k])
-        +"("+argsToString("currentargs", size(currentargs))+");")));
-      assignment[wait] = k;
-      k++;
-    }
-    else
-    {
-      break;
-    }
-  }
-
-  // collect the rest of the results
-  while(nfinished < N && nfinished+nkilled < njobs)
-  {
-    if(timeout == 0)
-    {
-      wait = waitfirst(links);
-    }
-    else
-    {
-      tt = timeout-(rtimer-t);
-      if(tt < 0)
-      {
-        wait = waitfirst(links, 0);
-        wait = 0;
-      }
-      else
-      {
-        wait = waitfirst(links, tt);
-      }
-    }
-    if(wait == -1)
-    {
-      ERROR("All links crashed.");
-    }
-    if(wait)
-    {
-      if(wait == nlinks+1)
-      {
-        wait = read(mempatrol);
-        close(l(wait));
-        results[assignment[wait]] = "out of memory";
-        nkilled++;
-      }
-      else
-      {
-        read(l(wait));
-        write(l(wait), quote(result));
-        results[assignment[wait]] = read(l(wait));
-        if(maxmems[assignment[wait]] > 0)
-        {
-          write(mempatrol, assignment[wait]);
-        }
-        nfinished++;
-      }
-    }
-    else
-    {
-      break;
-    }
-  }
-
-  // close all links
-  for(i = 1; i <= nlinks; i++)
-  {
-    if(status(l(i), "read", "ready"))
-    {
-      read(l(i));
-      write(l(i), quote(result));
-      results[assignment[i]] = read(l(i));
-    }
-    close(l(i));
-  }
-  if(havemaxmem)
-  {
-    close(mempatrol);
+  while(nfinished < N) {
+    wait = waitfirst(links);
+    results[wait] = waitTask(l(wait));
+    links[wait] = def(0);
+    nfinished++;
   }
 
   system("--ticks-per-sec", oldtimerresolution);
@@ -815,7 +538,7 @@ static proc primeList(int n, proc primeTest, list args, list #)
   return(primes);
 }
 
-static proc computeInCharP(string command, list args, int p)
+proc computeInCharP(string command, list args, int p)
 {
   def br = basering;
   list lbr = ringlist(br);
@@ -983,18 +706,3 @@ static proc getusedmemory(string server, int pid)
   return(i);
 }
 
-
-/* This is also included in semaphore.lib, so it can be deleted once
- * parallelWaitN is rewritten */
-static proc argsToString(string name, int length)
-{
-  string arglist;
-  if(length > 0) {
-    arglist = name+"[1]";
-  }
-  int i;
-  for(i = 2; i <= length; i++) {
-    arglist = arglist+", "+name+"["+string(i)+"]";
-  }
-  return(arglist);
-}

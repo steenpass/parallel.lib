@@ -156,7 +156,7 @@ example
 }
 
 / * construct the string "name[1], name[2], name[3], ..., name[length]" */
-static proc argsToString(string name, int length)
+proc argsToString(string name, int length)
 {
     string arglist;
     if (length > 0) {
