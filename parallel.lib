@@ -281,7 +281,8 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
 }
 example
 {
-  "EXAMPLE:"; echo = 2;
+  "EXAMPLE:";
+  echo = 2;
   LIB "primdec.lib";
   ring r = 0, (x,y,z), lp;
   ideal i = z8+z6+4z5+4z3+4z2+4, y-z2;
@@ -293,9 +294,8 @@ example
 }
 
 proc parallelWaitFirst(list commands, list args, list #)
-"USAGE:  parallelWaitFirst(commands, args[, timeout, linktype, servers,
-         maxmemory]); commands list, args list, timeout int, linktype string,
-         servers list, maxmemory intvec
+"USAGE:  parallelWaitFirst(commands, args[, timeout, linktype]); commands list,
+         args list, timeout int, linktype string
 RETURN:  a list, containing at least one (if no timeout occurs) of the results
          of commands[i] applied to arg[i], i = 1, ..., size(commands).
          @* The command
@@ -324,19 +324,18 @@ example
 }
 
 proc parallelWaitAll(def commands, list args, list #)
-"USAGE:  parallelWaitAll(commands, args[, timeout, linktype, servers,
-         maxmemory]); commands list or string, args list, timeout int,
-         linktype string, servers list, maxmemory intvec
+"USAGE:  parallelWaitAll(commands, args[, timeout, linktype]); commands list or
+         string, args list, timeout int, linktype string
 RETURN:  a list, containing the results of commands[i] applied to arg[i],
          i = 1, ..., size(commands).
          @* The command
          @code{parallelWaitAll(list commands, list args, list #)} is
          synonymous to
-         @code{parallelWaitN(list commands, list args, size(args), list #)}. See
-         @ref{parallelWaitN} for details on optional arguments and other
+         @code{parallelWaitN(list commands, list args, size(args), list #)}.
+         See @ref{parallelWaitN} for details on optional arguments and other
          remarks.
-         If commands is of type string, this is a shortcut for a list of size
-         @code{size(args)} whose entries are just this string.
+         If @code{commands} is of type string, this is a shortcut for a list
+         of size @code{size(args)} whose entries are just this string.
 SEE ALSO: Ssi links, MP links, waitall
 KEYWORDS: parallelWaitAll; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
