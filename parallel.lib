@@ -50,6 +50,10 @@ RETURN:  a list, containing the results of commands[i] applied to arg[i],
             @ref{Ssi links} and @ref{MP links}.
 NOTE:       The entries of the list commands must be strings.
          @* The entries of the list args must be lists.
+         @* The type of any entry of the returned list whose corresponding task
+            did not finish (due to timeout or error) is \"none\".
+            Be careful when using commands whose return value might be of type
+            \"none\"!
          @* The returned list may contain more than N results if several jobs
             finished \"at the same time\". It may contain less than N results
             in the case of timeout or errors occurring.
@@ -133,9 +137,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   int nfinished;
   int wait;
   list results;
-  for(i = njobs; i > 0; i--) {
-    results[i] = list();
-  }
+  results[njobs+1] = 0;   // prevent the list from being copied again and again
   while(nfinished < N) {
     wait = waitfirst(links);
     results[wait] = waitTask(l(wait));
@@ -154,6 +156,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
       }
     }
   }
+  results[njobs+1] = def(0);
 
   // return results
   system("--ticks-per-sec", oldtimerresolution);
