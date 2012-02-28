@@ -142,6 +142,18 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     links[wait] = def(0);
     nfinished++;
   }
+  list poll;
+  for(i = 1; i <= njobs; i++) {
+    if(typeof(links[i]) != "none") {
+      poll = pollTask(l(i));
+      if(poll[1]) {
+        results[i] = poll[2];
+      }
+      else {
+        stopTask(l(i));
+      }
+    }
+  }
 
   // return results
   system("--ticks-per-sec", oldtimerresolution);
