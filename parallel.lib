@@ -70,8 +70,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   int i, j, m, tt;
 
   // read optional parameters
-  list defaultserver = list("localhost", system("cpu"), "");
-  list defaults = list(0, "ssi", list(defaultserver), 0:size(commands));
+  list defaults = list(0, "ssi");
   for(i = 1; i <= size(defaults); i++)
   {
     if(typeof(#[i]) != typeof(defaults[i]))
@@ -83,34 +82,8 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   {
     ERROR("wrong optional parameters");
   }
-  for(j = size(#[3]); j > 0; j--)
-  {
-    if(typeof(#[3][j][1]) != typeof(defaultserver[1]))
-    {
-      #[3][j] = insert(#[3][j], defaultserver[1], 0);
-    }
-    defaultserver[3] = "";
-    // only for ssi:tcp links, the default program is system("Singular")
-    if(#[2] == "ssi" && #[3][j][1] != "localhost")
-    {
-      defaultserver[3] = system("Singular");
-    }
-    for(i = 2; i <= size(defaultserver); i++)
-    {
-      if(typeof(#[3][j][i]) != typeof(defaultserver[i]))
-      {
-        #[3][j] = insert(#[3][j], defaultserver[i], i-1);
-      }
-    }
-    if(size(#[3][j]) != size(defaultserver))
-    {
-      ERROR("wrong declaration for server no. "+string(j));
-    }
-  }
   int timeout = #[1];
   string linktype = #[2];
-  list servers = #[3];
-  intvec maxmems = #[4];
 
   // error checking
   int njobs = size(commands);
@@ -140,7 +113,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   }
   if(N > njobs)
   {
-    ERROR("The number of jobs which you wnat to wait for is greater"
+    ERROR("The number of jobs which you want to wait for is greater"
          +newline+"than the number of jobs itself.");
   }
   if(timeout < 0)
@@ -150,90 +123,6 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   if(linktype != "ssi" && linktype != "mp")
   {
     ERROR("The given linktype is not recognized.");
-  }
-  int nservers = size(servers);
-  if(nservers <= 0)
-  {
-    ERROR("no server specified");
-  }
-  for(i = 1; i <= nservers; i++)
-  {
-    if(servers[i][1] != "localhost")
-    {
-      if(system("sh", "ssh "+servers[i][1]+" exit"))
-      {
-        ERROR("Could not connect to server \""+servers[i][1]+"\"");
-      }
-    }
-    if(servers[i][2] < 0)
-    {
-      ERROR("The number of cores to be used on server \""+servers[i][1]+"\""
-           +newline+" is negative.");
-    }
-    if(servers[i][1] == "localhost")
-    {
-      int ncpus(i) = system("cpu");
-    }
-    else
-    {
-      if(linktype == "ssi")
-      {
-        link lcpu(i) = "ssi:tcp "+servers[i][1]+":"+servers[i][3];
-      }
-      else
-      {
-        if(program == "")
-        {
-          link lcpu(i) = "MPtcp:launch+" --MPhost "+servers[i][1];
-        }
-        else
-        {
-          link lcpu(i) = "MPtcp:launch+" --MPhost "+servers[i][1]
-            +" --MPapplication "+servers[i][3];
-        }
-      }
-      open(lcpu(i));
-      write(lcpu(i), quote(system("cpu")));
-      int ncpus(i) = read(lcpu(i));
-      close(lcpu(i));
-      kill lcpu(i);
-    }
-    if(servers[i][2] == 0)
-    {
-      servers[i][2] = ncpus(i);
-    }
-    else
-    {
-      if(servers[i][2] > ncpus(i))
-      {
-        ERROR("The number of cores to use on server \""+servers[i][1]+"\""
-             +newline+"is greater than the number of available cores");
-      }
-    }
-    if(servers[i][1] != "localhost")
-    {
-      if(system("sh", "ssh "+servers[i][1]+
-                      " 'test -e `which "+servers[i][3]+"`'"))
-      {
-        ERROR("\""+servers[i][3]+"\" was not found on"
-             +"\""+servers[i][1]+"\".");
-      }
-    }
-  }
-  if(size(maxmems) != njobs)
-  {
-    ERROR("The size of the intvec which specifies the maximal amount of memory"
-         +newline+"to be used for each job does not match the number of jobs.");
-  }
-  int havemaxmem;
-  for(i = 1; i <= njobs; i++)
-  {
-    if(maxmems[i] < 0)
-    {
-      ERROR("The maximal amount of memory to be used for job no. "+string(i)
-           +"is negative.");
-    }
-    havemaxmem = havemaxmem+maxmems[i];
   }
 
   for(i = 1; i <= njobs; i++) {
