@@ -35,9 +35,8 @@ PROCEDURES:
 LIB "semaphore.lib";
 
 proc parallelWaitN(list commands, list args, int N, list #)
-"USAGE:  parallelWaitN(commands, args, N[, timeout, linktype, servers,
-         maxmemory]); commands list, args list, N int, timeout int,
-         linktype string, servers list, maxmemory intvec
+"USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
+         args list, N int, timeout int, linktype string
 RETURN:  a list, containing the results of commands[i] applied to arg[i],
          i = 1, ..., size(commands).
          @* The procedure waits for N jobs to finish.
@@ -49,37 +48,15 @@ RETURN:  a list, containing the results of commands[i] applied to arg[i],
 
             Supported linktypes are up to now \"ssi\" and \"mp\", see
             @ref{Ssi links} and @ref{MP links}.
-
-            Servers:
-         @* Each server is given by a list containing the address of the server,
-            the number of cores to use on this server and the command to start
-            Singular.
-         @* If the address is \"localhost\", the processes will be generated on
-            the same machine using forks. If the command to start Singular is
-            \"\" (the empty string), \"Singular\" will be used.
-         @* Default is @code{list(\"localhost\", system(\"cpu\"), \"\")}.
-         @* There are some obvious shortcuts for servers, e.g. \"myserver\" is
-            a shortcut for
-            @code{list(\"myserver\", [nb. of cores on myserver], \"\")}, or 3
-            for @code{list(\"localhost\", 3, \"\")}.
-
-            Memory limits:
-         @* If an intvec maxmemory of size @code{size(commands)} is given, the
-            i-th job will be killed if it uses more than maxmemory[i] MB of
-            memory. If maxmemory[i] is 0, there will be no restraint for the
-            i-th job. Default is @code{0:size(commands)}.
 NOTE:       The entries of the list commands must be strings.
          @* The entries of the list args must be lists.
          @* The returned list may contain more than N results if several jobs
-            finished \"at the same time\". It may contain less than N results in
-            the case of timeout or errors occurring.
+            finished \"at the same time\". It may contain less than N results
+            in the case of timeout or errors occurring.
          @* MP links do not work with a 64 bit version of Singular. If you want
-            to use MP links, make sure that MP is available. This can be checked
-            by the Singular command @code{system(\"with\", \"MP\");}.
-         @* The check whether the jobs exceed the memory sizes given by
-            maxmemory is only done from time to time. This feature is
-            experimental and should be used with care.
-SEE ALSO: Ssi links, MP links, waitfirst, waitall
+            to use MP links, make sure that MP is available. This can be
+            checked by the Singular command @code{system(\"with\", \"MP\");}.
+SEE ALSO: Ssi links, MP links, waitfirst, waitall, semaphore_lib
 KEYWORDS: parallelWaitN; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
 EXAMPLE:  @code{example parallelWaitN;} shows an example."
