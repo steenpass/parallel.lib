@@ -67,7 +67,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   int t = rtimer;
 
   // auxiliary variables
-  int i, j, m, tt;
+  int i;
 
   // read optional parameters
   list defaults = list(0, "ssi");
@@ -125,6 +125,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     ERROR("The given linktype is not recognized.");
   }
 
+  // compute tasks
   for(i = 1; i <= njobs; i++) {
     link l(i) = startTask(commands[i], args[i]);
   }
@@ -142,6 +143,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     nfinished++;
   }
 
+  // return results
   system("--ticks-per-sec", oldtimerresolution);
   return(results);
 }
