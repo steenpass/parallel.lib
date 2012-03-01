@@ -2,7 +2,7 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   parallel.lib  Tools for Parallelization
+LIBRARY:   parallel.lib  Tools for parallelization
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
 OVERVIEW:

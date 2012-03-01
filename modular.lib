@@ -2,34 +2,42 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   parallel.lib  Tools for Parallelization
+LIBRARY:   modular.lib  An abstraction layer for modular techniques
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
 OVERVIEW:
-This library provides tools to do several computations in parallel. They
-are aimed at ordinary Singular users as well as authors of Singular
-libraries.
-@* Even without this library, it is possible to execute self-defined
-Singular commands in parallel using @ref{links}, but the handling of
-such links can be quite tedious. With the pocedures described below,
-this can be done by one-line commands.
-@* There are many parallel 'skeletons' (i.e. ways in which parallel
-tasks rely upon and interact with each other). A few of them are already
-implemented. Future plans include an abstraction layer for modular
-techniques, 'worker farms', and parallel tests.
+This library is an abstraction layer for modular techniques which are
+well-known to speed up many computations and to be easy parallelizable.
+@* The basic idea is to execute some computation modulo several primes and then
+to lift the result back to characteristic zero via the farey rational map and
+chinese remaindering. It is thus possible to overcome the often problematic
+coefficient swell and to run the modular computations in parallel.
+@* In Singular, modular techniques have been quite successfully employed for
+several applications. A first implementation was done for Groebner bases in
+Singular's @ref{modstd.lib}, a pioneering work by Stefan Steidel. Since the
+algorithm is basically the same for all applications, this library aims at
+preventing library authors from writing the same code over and over again by
+providing an appropriate abstraction layer. It also offers one-line commands
+for ordinary Singular users who want to take advantage of modular techniques
+for their own calculations. Thus modular techniques can be regarded as
+a parallel skeleton of their own.
+@* The terminology (such as 'pTest' and 'finalTest') follows Singular's
+@ref{modstd.lib} and [1].
 
-SEE ALSO:  link, semaphore_lib, modstd_lib, assprimeszerodim_lib
+REFERENCES:
+[1] Nazeran Idrees, Gerhard Pfister, Stefan Steidel: Parallelization of
+    Modular Algorithms. Journal of Symbolic Computation 46, 672-684 (2011).
+    http://arxiv.org/abs/1005.5663
 
-KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
+SEE ALSO:  link, semaphore_lib, parallel_lib, modstd_lib, assprimeszerodim_lib
+
+KEYWORDS:  modular.lib; Modular techniques; Parallelization;
            Skeletons for parallelization; Distributed computing
 
 PROCEDURES:
-  parallelWaitN(...)     execute several jobs in parallel,
-                         wait for N of them to finish
-  parallelWaitFirst(...) execute several jobs in parallel,
-                         wait for the first to finish
-  parallelWaitAll(...)   execute several jobs in parallel,
-                         wait for all of them to finish
+  doModular(...)      execute a command modulo several primes and
+                      lift the result back to charakteristic zero
+  computeInCharP(...) execute a command modulo a single prime
 ";
 
 LIB "parallel.lib";
