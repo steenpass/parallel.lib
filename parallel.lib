@@ -135,14 +135,32 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   }
   list links = l(1..njobs);
   int nfinished;
+  int tt;
   int wait;
   list results;
   results[njobs+1] = 0;   // prevent the list from being copied again and again
   while(nfinished < N) {
-    wait = waitfirst(links);
+    if (timeout == 0) {
+        wait = waitfirst(links);
+    }
+    else {
+        tt = timeout-(rtimer-t);
+        if (tt < 0) {
+            break;
+        }
+        else {
+            wait = waitfirst(links, tt);
+        }
+    }
+    if (wait < 1) {
+        break;
+    }
     results[wait] = waitTask(l(wait));
     links[wait] = def(0);
     nfinished++;
+  }
+  if (wait == -1) {
+      ERROR("All tasks crashed.");
   }
   list poll;
   for(i = 1; i <= njobs; i++) {
