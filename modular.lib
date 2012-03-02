@@ -50,7 +50,7 @@ proc modular(string command, list args, def primeTest,
 
   /* read optional parameters */
   int ncores_available = NbModProcs();
-  list defaults = list(ncores_available, ncores_available, 2);
+  list defaults = list(ncores_available, ncores_available, 2, "ssi");
   for(i = 1; i <= size(defaults); i++)
   {
     if(typeof(#[i]) != typeof(defaults[i]))
@@ -65,6 +65,7 @@ proc modular(string command, list args, def primeTest,
   int n1 = #[1];   // nb. of primes before the first lifting
   int n2 = #[2];   // nb. of additional primes for the next lifting
   int growths = #[3];
+  string linktype = #[4];
 
   /* error checking */
   if (n1 < 1 || n2 < 1 || growths < 1) {
@@ -144,7 +145,7 @@ proc modular(string command, list args, def primeTest,
     for (i = size(primes); i > 0; i--) {
       modargs[i] = list(command, args, primes[i]);
     }
-    modresults = parallelWaitAll("modp", modargs);
+    modresults = parallelWaitAll("modp", modargs, linktype);
 
     // delete unlucky primes
     modresults = deleteUnluckyPrimes(modresults);
