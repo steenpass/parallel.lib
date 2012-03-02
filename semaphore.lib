@@ -23,17 +23,49 @@ static proc mod_init()
     int tmp = system("semaphore", "init", 0, system("cpu")-1);
 }
 
-proc startTask(string command, list arguments)
-"USAGE:   startTask(command, arguments); command string, arguments list
+proc startTask(string command, list arguments, list #)
+"USAGE:   startTask(command, arguments[, linktype]); command string,
+          arguments list, linktype string
 RETURN:   a link l, running the computation which applies command to arguments
           as soon as there are free resources.
-SEE ALSO: stopTask, waitTask, pollTask, parallel_lib
+          @* An optional linktype can be provided as a string. Currently
+          supported linktypes are \"ssi\" (default, see @ref{Ssi links}) and
+          \"mp\" (see @ref{MP links}).
+          MP links do not work with a 64 bit version of Singular. If you want
+          to use MP links, make sure that MP is available. This can be checked
+          by the Singular command @code{system(\"with\", \"MP\");}.
+SEE ALSO: stopTask, waitTask, pollTask, parallel_lib, Ssi links, MP links
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example startTask; shows an example"
 {
-    link l = "ssi:fork";
+    /* read optional parameter */
+    string linktype = "ssi";
+    if (size(#) > 0) {
+        if (size(#) > 1 || typeof(#[1]) != "string") {
+            ERROR("wrong optional parameter");
+        }
+        linktype = #[1];
+    }
+
+    /* check for errors */
+    if (linktype != "ssi" && linktype != "mp") {
+        ERROR("invalid linktype");
+    }
+    if (linktype == "mp" && !system("with", "MP")) {
+        ERROR("MP is not available");
+    }
+
+    /* start the task */
+    if (linktype == "ssi") {
+        link l = "ssi:fork";
+    }
+    else {   // linktype == "mp"
+        link l = "MPtcp:fork";
+    }
     open(l);
     write(l, quote(startTask_child(command, arguments)));
+
+    /* return link */
     return(l);
 }
 example
