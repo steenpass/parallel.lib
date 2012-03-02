@@ -46,7 +46,7 @@ RETURN:  a list, containing the results of commands[i] applied to arg[i],
             An optional timeout in ms can be provided. Default is 0 which
             disables the timeout.
 
-            Supported linktypes are up to now \"ssi\" and \"mp\", see
+            Supported linktypes are up to now \"ssi\" (default) and \"mp\", see
             @ref{Ssi links} and @ref{MP links}.
 NOTE:       The entries of the list commands must be strings.
          @* The entries of the list args must be lists.
@@ -131,7 +131,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
 
   // compute tasks
   for(i = 1; i <= njobs; i++) {
-    link l(i) = startTask(commands[i], args[i]);
+    link l(i) = startTask(commands[i], args[i], linktype);
   }
   list links = l(1..njobs);
   int nfinished;
