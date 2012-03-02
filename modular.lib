@@ -35,14 +35,14 @@ KEYWORDS:  modular.lib; Modular techniques; Parallelization;
            Skeletons for parallelization; Distributed computing
 
 PROCEDURES:
-  doModular(...)      execute a command modulo several primes and
-                      lift the result back to charakteristic zero
-  computeInCharP(...) execute a command modulo a single prime
+  modular(...)  execute a command modulo several primes and lift the result
+                back to charakteristic zero
+  modp(...)     execute a command modulo a single prime
 ";
 
 LIB "parallel.lib";
 
-proc doModular(string command, list args, def primeTest,
+proc modular(string command, list args, def primeTest,
   def deleteUnluckyPrimes, def pTest, def finalTest, list #)
 {
   /* auxiliary variables */
@@ -144,7 +144,7 @@ proc doModular(string command, list args, def primeTest,
     for (i = size(primes); i > 0; i--) {
       modargs[i] = list(command, args, primes[i]);
     }
-    modresults = parallelWaitAll("computeInCharP", modargs);
+    modresults = parallelWaitAll("modp", modargs);
 
     // delete unlucky primes
     modresults = deleteUnluckyPrimes(modresults);
@@ -207,7 +207,7 @@ static proc primeList(int n, proc primeTest, list args, list #)
   return(primes);
 }
 
-proc computeInCharP(string command, list args, int p)
+proc modp(string command, list args, int p)
 {
   def br = basering;
   list lbr = ringlist(br);
