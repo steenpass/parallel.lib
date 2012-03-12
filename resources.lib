@@ -2,10 +2,10 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   semaphore.lib  An Interface for Tasks Using Semaphores
+LIBRARY:   resources.lib  Tools to manage compute servers
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
-SEE ALSO:  link, parallel_lib
+SEE ALSO:  link, semaphore_lib, parallel_lib
 
 KEYWORDS:  Semaphores; Parallelization; Links, user interface
 
