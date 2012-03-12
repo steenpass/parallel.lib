@@ -15,6 +15,44 @@ PROCEDURES:
 /* initialize the semaphore */
 static proc mod_init()
 {
-    int tmp = system("semaphore", "init", 0, system("cpu")-1);
+    int NCORES = system("cpu")-1;
+    export(NCORES);
+    int tmp = system("semaphore", "init", 0, NCORES);
+}
+
+proc addcores(int n)
+{
+    /* check for errors */
+    if (NCORES+n < 1) {
+        ERROR("The number of cores to use must be at least 1.");
+    }
+
+    /* change value of semaphore */
+    int i;
+    int tmp;
+    if (n >= 0) {
+        for (i = 0; i < n; i++) {
+            tmp = system("semaphore", "acquire", 0);
+        }
+    }
+    else {
+        for (i = 0; i > n; i--) {
+            tmp = system("semaphore", "release", 0);
+        }
+    }
+
+    /* adjust and return NCORES */
+    NCORES = NCORES+n;
+    return(getcores());
+}
+
+proc setcores(int n)
+{
+    return(addcores(n-NCORES));
+}
+
+proc getcores()
+{
+    return(NCORES);
 }
 
