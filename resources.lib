@@ -37,6 +37,25 @@ EXAMPLE:  example addcores; shows an example"
     }
 
     /* change value of semaphore */
+    link l = "ssi:fork";
+    write(l, quote(addcore_child(eval(n))));
+
+    /* adjust and return NCORES */
+    NCORES = NCORES+n;
+    return(NCORES);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    setcores(4);
+    addcores(-2);
+}
+
+/* This procedure has to be started within the child after forking. */
+static proc addcores_child(int n)
+{
+    /* change value of semaphore */
     int i;
     int tmp;
     if (n >= 0) {
@@ -50,16 +69,9 @@ EXAMPLE:  example addcores; shows an example"
         }
     }
 
-    /* adjust and return NCORES */
-    NCORES = NCORES+n;
-    return(getcores());
-}
-example
-{
-    "EXAMPLE:";
-    echo = 2;
-    setcores(4);
-    addcores(-2);
+    /* close this link */
+    int pid = system("pid");
+    system("sh", "kill -15 "+string(pid));
 }
 
 proc setcores(int n)
