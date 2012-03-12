@@ -21,6 +21,15 @@ static proc mod_init()
 }
 
 proc addcores(int n)
+"USAGE:   addcores(n), n int
+RETURN:   the number of cores that will be used.
+          @* n cores will be added to the number of cores to use.
+          @* If n is negative, the number of cores to use will be reduced. Note
+          that this adjustment may take some time.
+NOTE:     The number of cores to use must be at least 1.
+SEE ALSO: setcores, getcores, semaphore_lib, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example addcores; shows an example"
 {
     /* check for errors */
     if (NCORES+n < 1) {
@@ -47,11 +56,24 @@ proc addcores(int n)
 }
 
 proc setcores(int n)
+"USAGE:   setcores(n), n int
+RETURN:   the number of cores that will be used.
+          @* The number of cores to use will be set to n.
+          @* Note that reducing the number of cores to use may take some time.
+NOTE:     The number of cores to use must be at least 1.
+SEE ALSO: addcores, getcores, semaphore_lib, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example setcores; shows an example"
 {
     return(addcores(n-NCORES));
 }
 
 proc getcores()
+"USAGE:   addcores(n), n int
+RETURN:   the number of cores that are used.
+SEE ALSO: addcores, setcores, semaphore_lib, parallel_lib
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example getcores; shows an example"
 {
     return(NCORES);
 }
