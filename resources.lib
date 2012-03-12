@@ -54,6 +54,13 @@ EXAMPLE:  example addcores; shows an example"
     NCORES = NCORES+n;
     return(getcores());
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    setcores(4);
+    addcores(-2);
+}
 
 proc setcores(int n)
 "USAGE:   setcores(n), n int
@@ -67,6 +74,13 @@ EXAMPLE:  example setcores; shows an example"
 {
     return(addcores(n-NCORES));
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    setcores(2);
+    setcores(4);
+}
 
 proc getcores()
 "USAGE:   addcores(n), n int
@@ -76,5 +90,12 @@ KEYWORDS: Parallelization; Links
 EXAMPLE:  example getcores; shows an example"
 {
     return(NCORES);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    setcores(4);
+    getcores();
 }
 
