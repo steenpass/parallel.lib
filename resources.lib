@@ -15,9 +15,9 @@ PROCEDURES:
 /* initialize the semaphore */
 static proc mod_init()
 {
-    int NCORES = system("cpu")-1;
+    int NCORES = system("cpu");
     export(NCORES);
-    int tmp = system("semaphore", "init", 0, NCORES);
+    int tmp = system("semaphore", "init", 0, NCORES-1);
 }
 
 proc addcores(int n)
