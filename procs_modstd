@@ -223,19 +223,10 @@ proc pTest_modstd(string command, list args, def result, list primes)
    return(j);
 }
 
-proc finalTest_modstd()
+proc finalTest_modstd(string command, list args, ideal result)
 {
     attrib(J,"isSB",1);
 
-    if(exactness == 0)
-    {
-        option(set, opt);
-        if(n1 > 1) { kill I_for_fork; }
-        return(J);
-    }
-
-    if(exactness == 1)
-    {
         tt = timer; rt = rtimer;
         sizeTest = 1 - isIncluded(I,J,n1);
 
@@ -267,6 +258,5 @@ proc finalTest_modstd()
                 return(J);
             }
         }
-    }
 }
 
