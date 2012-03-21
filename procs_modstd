@@ -1,5 +1,7 @@
-proc primeTest(def II, bigint p)
+proc primeTest_modstd(int p, list args)
 {
+   def II = args[1];
+
    if(typeof(II) == "string")
    {
       execute("ideal I = "+II+";");
