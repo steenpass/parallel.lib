@@ -108,7 +108,7 @@ EXAMPLE: example isIncluded; shows an example
             }
             return(0);
          }
-         t = timer - t;
+         t = (timer - t) div system("--ticks-per-sec");
          if(t > 60) { t = 60; }
          int i_sleep = system("sh", "sleep "+string(t));
 
@@ -1058,7 +1058,7 @@ EXAMPLE: example modStd; shows an example
       {
          P = modpStd(I_for_fork, L[1], variant);
       }
-      t = timer - t;
+      t = (timer - t) div system("--ticks-per-sec");
       if(t > 60) { t = 60; }
       int i_sleep = system("sh", "sleep "+string(t));
       T1[1] = P[1];
