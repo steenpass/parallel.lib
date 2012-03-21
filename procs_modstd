@@ -29,15 +29,18 @@ proc primeTest_modstd(int p, list args)
    return(1);
 }
 
-proc deleteUnluckyPrimes(list T, list L, int ho, list #)
-"USAGE:  deleteUnluckyPrimes(T,L,ho,#); T/L list of polys/primes, ho integer
-RETURN:  lists T,L(,M),lT with T/L(/M) list of polys/primes(/type of #),
-         lT ideal
-NOTE:    - if ho = 1, the polynomials in T are homogeneous, else ho = 0,
-@*       - lT is prevalent, i.e. the most appearing leading ideal in T
-EXAMPLE: example deleteUnluckyPrimes; shows an example
-"
+proc deleteUnluckyPrimes_modstd(list modresults)
 {
+   list T;
+   list L;
+   int ii;
+   for (ii = size(modresults); ii > 0; ii--) {
+       T[ii] = modresults[ii][1];
+       L[ii] = modresults[ii][2];
+   }
+   int ho;
+   list #;
+
    ho = ((ho)||(ord_test(basering) == -1));
    int j,k,c;
    intvec hl,hc;
@@ -119,6 +122,14 @@ EXAMPLE: example deleteUnluckyPrimes; shows an example
    {
       L[j] = bigint(L[j]);
    }
+
+   modresults = list();
+   for (ii = size(T); ii > 0; ii--) {
+       modresults[ii] = list();
+       modresults[ii][1] = T[ii];
+       modresults[ii][2] = L[ii];
+   }
+   return(modresults);
 
    if(addList == 0) { return(list(T,L,lT)); }
    if(addList == 1) { return(list(T,L,M,lT)); }
