@@ -135,13 +135,25 @@ proc deleteUnluckyPrimes_modstd(list modresults)
    if(addList == 1) { return(list(T,L,M,lT)); }
 }
 
-proc pTestSB(ideal I, ideal J, list L, int variant, list #)
-"USAGE:  pTestSB(I,J,L,variant,#); I,J ideals, L intvec of primes, variant int
-RETURN:  1 (resp. 0) if for a randomly chosen prime p that is not in L
-         J mod p is (resp. is not) a standard basis of I mod p
-EXAMPLE: example pTestSB; shows an example
-"
+proc pTest_modstd(string command, list args, def result, list primes)
 {
+   ideal I = args[1];
+   ideal J = result;
+   list L;
+   int pp = prime(2147483647);
+   while (pp >= primes[1]) {
+       L[size(L)+1] = pp;
+       pp = prime(pp-1);
+   }
+   int variant;
+   if (command == "groebner") {
+       variant = 2;
+   }
+   else {
+       ERROR("which variant?");
+   }
+   list #;
+
    int i,j,k,p;
    def R = basering;
    list r = ringlist(R);
