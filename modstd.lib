@@ -487,8 +487,7 @@ EXAMPLE: example primList; shows an example
             if(p == 2) { ERROR("no more primes"); }
             arguments[i] = list("I", p);
          }
-         parallelResults = parallelWaitAll("primeTest", arguments,
-            list(list(list(ncores))));
+         parallelResults = parallelWaitAll("primeTest", arguments);
          for(i = size(arguments); i > 0; i--)
          {
             if(parallelResults[i])
@@ -1175,8 +1174,7 @@ EXAMPLE: example modStd; shows an example
          {
             arguments_farey[i] = list(ideal(H[i]), N);
          }
-         results_farey = parallelWaitAll("farey", arguments_farey,
-                                         list(list(list(n1))));
+         results_farey = parallelWaitAll("farey", arguments_farey);
          for(i = ncols(H); i > 0; i--)
          {
             J[i] = results_farey[i][1];
