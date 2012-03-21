@@ -135,3 +135,79 @@ proc deleteUnluckyPrimes_modstd(list modresults)
    if(addList == 1) { return(list(T,L,M,lT)); }
 }
 
+proc pTestSB(ideal I, ideal J, list L, int variant, list #)
+"USAGE:  pTestSB(I,J,L,variant,#); I,J ideals, L intvec of primes, variant int
+RETURN:  1 (resp. 0) if for a randomly chosen prime p that is not in L
+         J mod p is (resp. is not) a standard basis of I mod p
+EXAMPLE: example pTestSB; shows an example
+"
+{
+   int i,j,k,p;
+   def R = basering;
+   list r = ringlist(R);
+
+   while(!j)
+   {
+      j = 1;
+      p = prime(random(1000000000,2134567879));
+      for(i = 1; i <= size(L); i++)
+      {
+         if(p == L[i]) { j = 0; break; }
+      }
+      if(j)
+      {
+         for(i = 1; i <= ncols(I); i++)
+         {
+            for(k = 2; k <= size(I[i]); k++)
+            {
+               if((denominator(leadcoef(I[i][k])) mod p) == 0) { j = 0; break; }
+            }
+            if(!j){ break; }
+         }
+      }
+      if(j)
+      {
+         if(!primeTest(I,p)) { j = 0; }
+      }
+   }
+   r[1] = p;
+   def @R = ring(r);
+   setring @R;
+   ideal I = imap(R,I);
+   ideal J = imap(R,J);
+   attrib(J,"isSB",1);
+
+   int t = timer;
+   j = 1;
+   if(isIncluded(I,J) == 0) { j = 0; }
+
+   if(printlevel >= 11)
+   {
+      "isIncluded(I,J) takes "+string(timer - t)+" seconds";
+      "j = "+string(j);
+   }
+
+   t = timer;
+   if(j)
+   {
+      if(size(#) > 0)
+      {
+         ideal K = modpStd(I,p,variant,#[1])[1];
+      }
+      else
+      {
+         ideal K = groebner(I);
+      }
+      t = timer;
+      if(isIncluded(J,K) == 0) { j = 0; }
+
+      if(printlevel >= 11)
+      {
+         "isIncluded(J,K) takes "+string(timer - t)+" seconds";
+         "j = "+string(j);
+      }
+   }
+   setring R;
+   return(j);
+}
+
