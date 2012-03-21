@@ -223,3 +223,50 @@ proc pTest_modstd(string command, list args, def result, list primes)
    return(j);
 }
 
+proc finalTest_modstd()
+{
+         attrib(J,"isSB",1);
+
+         if(exactness == 0)
+         {
+            option(set, opt);
+            if(n1 > 1) { kill I_for_fork; }
+            return(J);
+         }
+
+         if(exactness == 1)
+         {
+            tt = timer; rt = rtimer;
+            sizeTest = 1 - isIncluded(I,J,n1);
+
+            if(printlevel >= 10)
+            {
+               "CPU-time for checking if I subset <G> is "
+               +string(timer - tt)+" seconds.";
+               "Real-time for checking if I subset <G> is "
+               +string(rtimer - rt)+" seconds.";
+            }
+
+            if(sizeTest == 0)
+            {
+               tt = timer; rt = rtimer;
+               K = std(J);
+
+               if(printlevel >= 10)
+               {
+                  "CPU-time for last std-computation is "
+                  +string(timer - tt)+" seconds.";
+                  "Real-time for last std-computation is "
+                  +string(rtimer - rt)+" seconds.";
+               }
+
+               if(size(reduce(K,J)) == 0)
+               {
+                  option(set, opt);
+                  if(n1 > 1) { kill I_for_fork; }
+                  return(J);
+               }
+            }
+         }
+}
+
