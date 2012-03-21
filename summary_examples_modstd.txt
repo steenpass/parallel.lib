@@ -1,0 +1,144 @@
+// timings on babu, bobesch, and pipapo with Singular 3140-14654
+// (728592 in git)
+
+LIB "poly.lib";
+
+// 1. example: Cyclic_8.xml
+/*
+n1 = 8, n2 = 10, n3 = 10, exactness = 1
+variant = 2
+CPU-time for primeList: 0 seconds.
+Real-time for primeList: 0 seconds.
+size(L) = 50
+CPU-time for computing list is 827 seconds.
+Real-time for computing list is 243 seconds.
+CPU-time for lifting-process is 28 seconds.
+Real-time for lifting-process is 8 seconds.
+CPU-time for pTest is 47 seconds.
+Real-time for pTest is 46 seconds.
+CPU-time for computation without final tests is 4439 seconds.
+Real-time for computation without final tests is 1505 seconds.
+CPU-time for checking if I subset <G> is 53 seconds.
+Real-time for checking if I subset <G> is 71 seconds.
+CPU-time for last std-computation is 47 seconds.
+Real-time for last std-computation is 47 seconds.
+*/
+ring R1 = 0, x(1..8), dp;
+ideal I = cyclic(8);
+
+// 2. example: Paris.ilias13.xml
+/*
+n1 = 8, n2 = 10, n3 = 10, exactness = 1
+variant = 2
+CPU-time for primeList: 0 seconds.
+Real-time for primeList: 1 seconds.
+size(L) = 70
+CPU-time for computing list is 53 seconds.
+Real-time for computing list is 22 seconds.
+CPU-time for lifting-process is 57 seconds.
+Real-time for lifting-process is 9 seconds.
+CPU-time for pTest is 3 seconds.
+Real-time for pTest is 3 seconds.
+CPU-time for computation without final tests is 578 seconds.
+Real-time for computation without final tests is 215 seconds.
+CPU-time for checking if I subset <G> is 12 seconds.
+Real-time for checking if I subset <G> is 8 seconds.
+CPU-time for last std-computation is 48 seconds.
+Real-time for last std-computation is 48 seconds.
+
+A single modular computation takes about 5 s.
+*/
+ring R2 = 0, (S1,s1,d1,S2,D2,s2,d2), dp;
+ideal I = -8*d1*D2+2*S2*s2-2*D2*d2-8*S2-4*s2+16,
+          8*d1*D2-2*S2*s2+2*D2*d2+8*S2+4*s2-16,
+          -8*d1*S2-16*s1*D2+2*D2*s2-2*S2*d2+16*d1+8*D2+4*d2,
+          8*d1*S2+16*s1*D2-2*D2*s2+2*S2*d2-16*d1-8*D2-4*d2,
+          -8*S1*S2+4*S2^2-20*D2^2+16*S1-16,
+          8*S1*S2-4*S2^2+20*D2^2-16*S1+16,
+          -16*d1^2-8*s1*s2+s2^2-8*d1*d2-d2^2+32*s1-16,
+          16*d1^2+8*s1*s2-s2^2+8*d1*d2+d2^2-32*s1+16,
+          -16*S1*d1+8*d1*S2-10*D2*s2-4*S1*d2+2*S2*d2+16*d1+40*D2+4*d2,
+          16*S1*d1-8*d1*S2+10*D2*s2+4*S1*d2-2*S2*d2-16*d1-40*D2-4*d2,
+          -32*S1*s1+16*s1*S2+40*d1*D2+4*S1*s2-2*S2*s2+10*D2*d2+16*S1+32*s1-8*S2-4*s2-16,
+          32*S1*s1-16*s1*S2-40*d1*D2-4*S1*s2+2*S2*s2-10*D2*d2-16*S1-32*s1+8*S2+4*s2+16,
+          S2^2*s2^3-2*S2*D2*s2^3+D2^2*s2^3+3*S2^2*s2^2*d2-6*S2*D2*s2^2*d2+3*D2^2*s2^2*d2+3*S2^2*s2*d2^2-6*S2*D2*s2*d2^2+3*D2^2*s2*d2^2+S2^2*d2^3-2*S2*D2*d2^3+D2^2*d2^3-32,
+          S2^2*s2^3+2*S2*D2*s2^3+D2^2*s2^3-3*S2^2*s2^2*d2-6*S2*D2*s2^2*d2-3*D2^2*s2^2*d2+3*S2^2*s2*d2^2+6*S2*D2*s2*d2^2+3*D2^2*s2*d2^2-S2^2*d2^3-2*S2*D2*d2^3-D2^2*d2^3-32,
+          S1^2*s1^3-3*S1^2*s1^2*d1+3*S1^2*s1*d1^2-S1^2*d1^3+4*S1*s1^3*D2-12*S1*s1^2*d1*D2+12*S1*s1*d1^2*D2-4*S1*d1^3*D2+4*s1^3*D2^2-12*s1^2*d1*D2^2+12*s1*d1^2*D2^2-4*d1^3*D2^2-32,
+          S1^2*s1^3+3*S1^2*s1^2*d1+3*S1^2*s1*d1^2+S1^2*d1^3-4*S1*s1^3*D2-12*S1*s1^2*d1*D2-12*S1*s1*d1^2*D2-4*S1*d1^3*D2+4*s1^3*D2^2+12*s1^2*d1*D2^2+12*s1*d1^2*D2^2+4*d1^3*D2^2-32;
+
+// 3. example: homog. Cyclic_7.xml
+/*
+n1 = 8, n2 = 10, n3 = 10, exactness = 1
+variant = 1
+CPU-time for primeList: 1 seconds.
+Real-time for primeList: 0 seconds.
+size(L) = 20
+CPU-time for computing list is 12 seconds.
+Real-time for computing list is 6 seconds.
+CPU-time for lifting-process is 8 seconds.
+Real-time for lifting-process is 6 seconds.
+CPU-time for pTest is 2 seconds.
+Real-time for pTest is 1 seconds.
+CPU-time for computation without final tests is 46 seconds.
+Real-time for computation without final tests is 29 seconds.
+CPU-time for checking if I subset <G> is 3 seconds.
+Real-time for checking if I subset <G> is 2 seconds.
+CPU-time for last std-computation is 660 seconds.
+Real-time for last std-computation is 660 seconds.
+*/
+ring R3 = 0, (x(1..7),h), dp;
+ideal I = cyclic(7);
+I = homog(I,h);
+
+// 4. example: Steidel_1.xml
+/*
+n1 = 8, n2 = 10, n3 = 10, exactness = 1
+CPU-time for primeList: 0 seconds.
+Real-time for primeList: 0 seconds.
+variant = 2
+size(L) = 10
+CPU-time for computing list is 4 seconds.
+Real-time for computing list is 2 seconds.
+CPU-time for lifting-process is 0 seconds.
+Real-time for lifting-process is 0 seconds.
+CPU-time for pTest is 0 seconds.
+Real-time for pTest is 0 seconds.
+CPU-time for computation without final tests is 5 seconds.
+Real-time for computation without final tests is 4 seconds.
+CPU-time for checking if I subset <G> is 0 seconds.
+Real-time for checking if I subset <G> is 0 seconds.
+CPU-time for last std-computation is 0 seconds.
+Real-time for last std-computation is 1 seconds.
+*/
+ring R4 = 0, (x,y,z), ds;
+poly f = xyz*(x+y+z)^2 + (x+y+z)^3 + x10 + y10 + z10;
+ideal I = jacob(f);
+
+// 5. example:
+// musste abgebrochen werden nach mehreren Tagen, scheiterte am pTestSB in reduce(I[i],J,1);
+ring R5 = 0, (t,x,y,z), ds;
+ideal I = 5t3x2z+2t2y3x5, 7y+4x2y+y2x+2zt, 3tz+3yz2+2yz4;
+
+// 6. example: Gerhard´s e-mail
+/*
+n1 = 8, n2 = 10, n3 = 10, exactness = 1
+variant = 1
+CPU-time for primeList: 0 seconds.
+Real-time for primeList: 0 seconds.
+size(L) = 30
+CPU-time for computing list is 12 seconds.
+Real-time for computing list is 5 seconds.
+CPU-time for lifting-process is 11 seconds.
+Real-time for lifting-process is 5 seconds.
+CPU-time for pTest is 1 seconds.
+Real-time for pTest is 1 seconds.
+CPU-time for computation without final tests is 65 seconds.
+Real-time for computation without final tests is 35 seconds.
+CPU-time for checking if I subset <G> is 2 seconds.
+Real-time for checking if I subset <G> is 1 seconds.
+CPU-time for last std-computation is 3298 seconds.
+Real-time for last std-computation is 3300 seconds.
+*/
+ring R6 = 0, (a,b,c,d,e), dp;
+int n = 6;
+ideal I = a^n-b^n, b^n-c^n, c^n-d^n, d^n-e^n, a^(n-1)*b+b^(n-1)*c+c^(n-1)*d+d^(n-1)*e+e^(n-1)*a;
