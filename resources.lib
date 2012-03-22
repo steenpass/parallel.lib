@@ -12,12 +12,11 @@ KEYWORDS:  Semaphores; Parallelization; Links, user interface
 PROCEDURES:
 ";
 
-/* initialize the semaphore */
+/* initialize the (lib-)global variable NCORES */
 static proc mod_init()
 {
-    int NCORES = system("cpu");
+    int NCORES = system("semaphore", "get_value", 0)+1;
     export(NCORES);
-    int tmp = system("semaphore", "init", 0, NCORES-1);
 }
 
 proc addcores(int n)
