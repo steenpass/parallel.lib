@@ -37,7 +37,9 @@ EXAMPLE:  example addcores; shows an example"
 
     /* change value of semaphore */
     link l = "ssi:fork";
-    write(l, quote(addcore_child(eval(n))));
+    open(l);
+    write(l, quote(addcores_child(eval(n))));
+    export(l);
 
     /* adjust and return NCORES */
     NCORES = NCORES+n;
@@ -59,12 +61,12 @@ static proc addcores_child(int n)
     int tmp;
     if (n >= 0) {
         for (i = 0; i < n; i++) {
-            tmp = system("semaphore", "acquire", 0);
+            tmp = system("semaphore", "release", 0);
         }
     }
     else {
         for (i = 0; i > n; i--) {
-            tmp = system("semaphore", "release", 0);
+            tmp = system("semaphore", "acquire", 0);
         }
     }
 
