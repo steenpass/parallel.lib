@@ -156,8 +156,8 @@ proc modular(string command, list args, def primeTest,
     }
     result_lift, N = modlift(modresults, result_lift, N);
 
-    // apply farey()
-    result = farey(result_lift, N);
+    // apply farey
+    result = par_farey(result_lift, N);
 
     // pTest
     if(!pTest(command, args, result, primes)) {
@@ -225,6 +225,25 @@ proc modp(string command, list args, int p)
   setring(br);
   def result = fetch(rp, result);
   return(list(result, p));
+}
+
+static proc par_farey(def arg, bigint N)
+{
+  if (typeof(arg) == "ideal") {
+    list arguments;
+    int i;
+    for (i = ncols(arg); i > 0; i--) {
+      arguments[i] = list(ideal(arg[i]), N);
+    }
+    list gens = parallelWaitAll("farey", arguments);
+    ideal result;
+    for (i = size(gens); i > 0; i--) {
+      result[i] = gens[i][1];
+    }
+    return(result);
+  }
+
+  return(farey(arg, N));
 }
 
 static proc primeTest_default(int p, list args)
