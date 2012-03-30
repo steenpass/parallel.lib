@@ -19,9 +19,9 @@ OVERVIEW:
   Journal of Symbolic Computation 35, 403-419 (2003).
 
 PROCEDURES:
- modStd(I);        standard basis of I using modular methods (chinese remainder)
- modS(I,L);        liftings to Q of standard bases of I mod p for p in L
- modHenselStd(I);  standard basis of I using modular methods (hensel lifting)
+ modStd_old(I);        standard basis of I using modular methods (chinese remainder)
+ modS_old(I,L);        liftings to Q of standard bases of I mod p for p in L
+ modHenselStd_old(I);  standard basis of I using modular methods (hensel lifting)
 ";
 
 LIB "poly.lib";
@@ -30,10 +30,10 @@ LIB "parallel.lib";
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc mixedTest()
-"USAGE:  mixedTest();
+proc mixedTest_old()
+"USAGE:  mixedTest_old();
 RETURN:  1 if ordering of basering is mixed, 0 else
-EXAMPLE: example mixedTest(); shows an example
+EXAMPLE: example mixedTest_old(); shows an example
 "
 {
    int i,p,m;
@@ -54,11 +54,11 @@ EXAMPLE: example mixedTest(); shows an example
 example
 { "EXAMPLE:"; echo = 2;
    ring R1 = 0,(x,y,z),dp;
-   mixedTest();
+   mixedTest_old();
    ring R2 = 31,(x(1..4),y(1..3)),(ds(4),lp(3));
-   mixedTest();
+   mixedTest_old();
    ring R3 = 181,x(1..9),(dp(5),lp(4));
-   mixedTest();
+   mixedTest_old();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,11 +71,11 @@ static proc redFork(ideal I, ideal J, int n)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc isIncluded(ideal I, ideal J, list #)
-"USAGE:  isIncluded(I,J); I,J ideals
+proc isIncluded_old(ideal I, ideal J, list #)
+"USAGE:  isIncluded_old(I,J); I,J ideals
 RETURN:  1 if J includes I,
 @*       0 if there is an element f in I which does not reduce to 0 w.r.t. J.
-EXAMPLE: example isIncluded; shows an example
+EXAMPLE: example isIncluded_old; shows an example
 "
 {
    def R = basering;
@@ -164,23 +164,23 @@ example
    ring r=0,(x,y,z),dp;
    ideal I = x+1,x+y+1;
    ideal J = x+1,y;
-   isIncluded(I,J);
-   isIncluded(J,I);
-   isIncluded(I,J,4);
+   isIncluded_old(I,J);
+   isIncluded_old(J,I);
+   isIncluded_old(I,J,4);
 
    ring R = 0, x(1..5), dp;
    ideal I1 = cyclic(4);
    ideal I2 = I1,x(5)^2;
-   isIncluded(I1,I2,4);
+   isIncluded_old(I1,I2,4);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc pTestSB(ideal I, ideal J, list L, int variant, list #)
-"USAGE:  pTestSB(I,J,L,variant,#); I,J ideals, L intvec of primes, variant int
+proc pTestSB_old(ideal I, ideal J, list L, int variant, list #)
+"USAGE:  pTestSB_old(I,J,L,variant,#); I,J ideals, L intvec of primes, variant int
 RETURN:  1 (resp. 0) if for a randomly chosen prime p that is not in L
          J mod p is (resp. is not) a standard basis of I mod p
-EXAMPLE: example pTestSB; shows an example
+EXAMPLE: example pTestSB_old; shows an example
 "
 {
    int i,j,k,p;
@@ -208,7 +208,7 @@ EXAMPLE: example pTestSB; shows an example
       }
       if(j)
       {
-         if(!primeTest(I,p)) { j = 0; }
+         if(!primeTest_old(I,p)) { j = 0; }
       }
    }
    r[1] = p;
@@ -220,11 +220,11 @@ EXAMPLE: example pTestSB; shows an example
 
    int t = timer;
    j = 1;
-   if(isIncluded(I,J) == 0) { j = 0; }
+   if(isIncluded_old(I,J) == 0) { j = 0; }
 
    if(printlevel >= 11)
    {
-      "isIncluded(I,J) takes "+string(timer - t)+" seconds";
+      "isIncluded_old(I,J) takes "+string(timer - t)+" seconds";
       "j = "+string(j);
    }
 
@@ -233,18 +233,18 @@ EXAMPLE: example pTestSB; shows an example
    {
       if(size(#) > 0)
       {
-         ideal K = modpStd(I,p,variant,#[1])[1];
+         ideal K = modpStd_old(I,p,variant,#[1])[1];
       }
       else
       {
          ideal K = groebner(I);
       }
       t = timer;
-      if(isIncluded(J,K) == 0) { j = 0; }
+      if(isIncluded_old(J,K) == 0) { j = 0; }
 
       if(printlevel >= 11)
       {
-         "isIncluded(J,K) takes "+string(timer - t)+" seconds";
+         "isIncluded_old(J,K) takes "+string(timer - t)+" seconds";
          "j = "+string(j);
       }
    }
@@ -257,19 +257,19 @@ example
    ring r = 0,(x,y,z),dp;
    ideal I = x+1,x+y+1;
    ideal J = x+1,y;
-   pTestSB(I,I,L,2);
-   pTestSB(I,J,L,2);
+   pTestSB_old(I,I,L,2);
+   pTestSB_old(I,J,L,2);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc deleteUnluckyPrimes(list T, list L, int ho, list #)
-"USAGE:  deleteUnluckyPrimes(T,L,ho,#); T/L list of polys/primes, ho integer
+proc deleteUnluckyPrimes_old(list T, list L, int ho, list #)
+"USAGE:  deleteUnluckyPrimes_old(T,L,ho,#); T/L list of polys/primes, ho integer
 RETURN:  lists T,L(,M),lT with T/L(/M) list of polys/primes(/type of #),
          lT ideal
 NOTE:    - if ho = 1, the polynomials in T are homogeneous, else ho = 0,
 @*       - lT is prevalent, i.e. the most appearing leading ideal in T
-EXAMPLE: example deleteUnluckyPrimes; shows an example
+EXAMPLE: example deleteUnluckyPrimes_old; shows an example
 "
 {
    ho = ((ho)||(ord_test(basering) == -1));
@@ -367,14 +367,14 @@ example
    ideal I4 = y2x,11x3y,x5;
    ideal I5 = y2x,yx3,x5,7y6;
    list T = I1,I2,I3,I4,I5;
-   deleteUnluckyPrimes(T,L,1);
+   deleteUnluckyPrimes_old(T,L,1);
    list P = poly(x),poly(x2),poly(x3),poly(x4),poly(x5);
-   deleteUnluckyPrimes(T,L,1,P);
+   deleteUnluckyPrimes_old(T,L,1,P);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc primeTest(def II, bigint p)
+proc primeTest_old(def II, bigint p)
 {
    if(typeof(II) == "string")
    {
@@ -405,8 +405,8 @@ proc primeTest(def II, bigint p)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc primeList(ideal I, int n, list #)
-"USAGE:  primeList(I,n[,ncores]); ( resp. primeList(I,n[,L,ncores]); ) I ideal,
+proc primeList_old(ideal I, int n, list #)
+"USAGE:  primeList_old(I,n[,ncores]); ( resp. primeList_old(I,n[,L,ncores]); ) I ideal,
          n integer
 RETURN:  the intvec of n greatest primes <= 2147483647 (resp. n greatest primes
          < L[size(L)] union with L) such that none of these primes divides any
@@ -439,7 +439,7 @@ EXAMPLE: example primList; shows an example
    if(size(#) == 0)
    {
       p = 2147483647;
-      while(!primeTest(I,p))
+      while(!primeTest_old(I,p))
       {
          p = prime(p-1);
          if(p == 2) { ERROR("no more primes"); }
@@ -450,7 +450,7 @@ EXAMPLE: example primList; shows an example
    {
       L = #[1];
       p = prime(L[size(L)]-1);
-      while(!primeTest(I,p))
+      while(!primeTest_old(I,p))
       {
          p = prime(p-1);
          if(p == 2) { ERROR("no more primes"); }
@@ -463,7 +463,7 @@ EXAMPLE: example primList; shows an example
       for(i = 2; i <= n; i++)
       {
          p = prime(p-1);
-         while(!primeTest(I,p))
+         while(!primeTest_old(I,p))
          {
             p = prime(p-1);
             if(p == 2) { ERROR("no more primes"); }
@@ -487,7 +487,7 @@ EXAMPLE: example primList; shows an example
             if(p == 2) { ERROR("no more primes"); }
             arguments[i] = list("I", p);
          }
-         parallelResults = parallelWaitAll("primeTest", arguments);
+         parallelResults = parallelWaitAll("primeTest_old", arguments);
          for(i = size(arguments); i > 0; i--)
          {
             if(parallelResults[i])
@@ -508,11 +508,11 @@ example
 { "EXAMPLE:"; echo = 2;
    ring r = 0,(x,y,z),dp;
    ideal I = 2147483647x+y, z-181;
-   intvec L = primeList(I,10);
+   intvec L = primeList_old(I,10);
    size(L);
    L[1];
    L[size(L)];
-   L = primeList(I,5,L);
+   L = primeList_old(I,5,L);
    size(L);
    L[size(L)];
 }
@@ -601,8 +601,8 @@ example
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc modpStd(ideal I, int p, int variant, list #)
-"USAGE:  modpStd(I,p,variant,#); I ideal, p integer, variant integer
+proc modpStd_old(ideal I, int p, int variant, list #)
+"USAGE:  modpStd_old(I,p,variant,#); I ideal, p integer, variant integer
 ASSUME:  If size(#) > 0, then #[1] is an intvec describing the Hilbert series.
 RETURN:  ideal - a standard basis of I mod p, integer - p
 NOTE:    The procedure computes a standard basis of the ideal I modulo p and
@@ -614,7 +614,7 @@ NOTE:    The procedure computes a standard basis of the ideal I modulo p and
 @*       - variant = 2: groebner,
 @*       - variant = 3: homog. - std(.,#[1]) resp. groebner - dehomog.,
 @*       - variant = 4: fglm.
-EXAMPLE: example modpStd; shows an example
+EXAMPLE: example modpStd_old; shows an example
 "
 {
    def R0 = basering;
@@ -707,20 +707,20 @@ example
    ring r = 0, x(1..4), dp;
    ideal I = cyclic(4);
    int p = 181;
-   list P = modpStd(I,p,2);
+   list P = modpStd_old(I,p,2);
    P;
 
    ring r2 = 0, x(1..5), lp;
    ideal I = cyclic(5);
    int q = 32003;
-   list Q = modpStd(I,q,4);
+   list Q = modpStd_old(I,q,4);
    Q;
 }
 
 ////////////////////////////// main procedures /////////////////////////////////
 
 proc modStd_old(ideal I, list #)
-"USAGE:  modStd(I); I ideal
+"USAGE:  modStd_old(I); I ideal
 ASSUME:  If size(#) > 0, then # contains either 1, 2 or 4 integers such that
 @*       - #[1] is the number of available processors for the computation,
 @*       - #[2] is an optional parameter for the exactness of the computation,
@@ -742,7 +742,7 @@ NOTE:    The procedure computes a standard basis of I (over the rational
 @*       - variant = 3, if I is not homogeneous, complicated ordering (lp or
                         > 1 block),
 @*       - variant = 4, if I is not homogeneous, ordering lp, dim(I) = 0.
-EXAMPLE: example modStd; shows an example
+EXAMPLE: example modStd_old; shows an example
 "
 {
    int TT = timer;
@@ -841,11 +841,11 @@ EXAMPLE: example modStd; shows an example
 //--------------------  Initialize the list of primes  -------------------------
    int tt = timer;
    int rt = rtimer;
-   intvec L = primeList(I,n2,n1);
+   intvec L = primeList_old(I,n2,n1);
    if(printlevel >= 10)
    {
-      "CPU-time for primeList: "+string(timer-tt)+" seconds.";
-      "Real-time for primeList: "+string(rtimer-rt)+" seconds.";
+      "CPU-time for primeList_old: "+string(timer-tt)+" seconds.";
+      "Real-time for primeList_old: "+string(rtimer-rt)+" seconds.";
    }
    L[5] = prime(random(an,en));
 
@@ -856,7 +856,7 @@ EXAMPLE: example modStd; shows an example
    tt = timer;
    rt = rtimer;
 
-   if(!mixedTest())
+   if(!mixedTest_old())
    {
       if(h)
       {
@@ -1039,12 +1039,12 @@ EXAMPLE: example modStd; shows an example
          open(l(i));
          if((variant == 1) || (variant == 3))
          {
-            write(l(i), quote(modpStd(I_for_fork, eval(L[i + 1]),
+            write(l(i), quote(modpStd_old(I_for_fork, eval(L[i + 1]),
                                                   eval(variant), eval(hi))));
          }
          if((variant == 2) || (variant == 4))
          {
-            write(l(i), quote(modpStd(I_for_fork, eval(L[i + 1]),
+            write(l(i), quote(modpStd_old(I_for_fork, eval(L[i + 1]),
                                                   eval(variant))));
          }
       }
@@ -1052,11 +1052,11 @@ EXAMPLE: example modStd; shows an example
       int t = timer;
       if((variant == 1) || (variant == 3))
       {
-         P = modpStd(I_for_fork, L[1], variant, hi);
+         P = modpStd_old(I_for_fork, L[1], variant, hi);
       }
       if((variant == 2) || (variant == 4))
       {
-         P = modpStd(I_for_fork, L[1], variant);
+         P = modpStd_old(I_for_fork, L[1], variant);
       }
       t = (timer - t) div system("--ticks-per-sec");
       if(t > 60) { t = 60; }
@@ -1098,13 +1098,13 @@ EXAMPLE: example modStd; shows an example
                   {
                      if((variant == 1) || (variant == 3))
                      {
-                        write(l(i), quote(modpStd(I_for_fork, eval(L[j]),
+                        write(l(i), quote(modpStd_old(I_for_fork, eval(L[j]),
                                                   eval(variant), eval(hi))));
                         j++;
                      }
                      if((variant == 2) || (variant == 4))
                      {
-                        write(l(i), quote(modpStd(I_for_fork,
+                        write(l(i), quote(modpStd_old(I_for_fork,
                                                   eval(L[j]), eval(variant))));
                         j++;
                      }
@@ -1130,11 +1130,11 @@ EXAMPLE: example modStd; shows an example
          {
             if((variant == 1) || (variant == 3))
             {
-               P = modpStd(I, L[j], variant, hi);
+               P = modpStd_old(I, L[j], variant, hi);
             }
             if((variant == 2) || (variant == 4))
             {
-               P = modpStd(I, L[j], variant);
+               P = modpStd_old(I, L[j], variant);
             }
 
             T1[index] = P[1];
@@ -1153,7 +1153,7 @@ EXAMPLE: example modStd; shows an example
 //------------------------  Delete unlucky primes  -----------------------------
 //-------------  unlucky if and only if the leading ideal is wrong  ------------
 
-      LL = deleteUnluckyPrimes(T1,T2,h);
+      LL = deleteUnluckyPrimes_old(T1,T2,h);
       T1 = LL[1];
       T2 = LL[2];
 
@@ -1191,11 +1191,11 @@ EXAMPLE: example modStd; shows an example
       tt = timer; rt = rtimer;
       if((variant == 1) || (variant == 3))
       {
-         pTest = pTestSB(I,J,L,variant,hi);
+         pTest = pTestSB_old(I,J,L,variant,hi);
       }
       if((variant == 2) || (variant == 4))
       {
-         pTest = pTestSB(I,J,L,variant);
+         pTest = pTestSB_old(I,J,L,variant);
       }
 
       if(printlevel >= 10)
@@ -1226,7 +1226,7 @@ EXAMPLE: example modStd; shows an example
          if(exactness == 1)
          {
             tt = timer; rt = rtimer;
-            sizeTest = 1 - isIncluded(I,J,n1);
+            sizeTest = 1 - isIncluded_old(I,J,n1);
 
             if(printlevel >= 10)
             {
@@ -1268,11 +1268,11 @@ EXAMPLE: example modStd; shows an example
 
       j = size(L) + 1;
       tt = timer; rt = rtimer;
-      L = primeList(I,n3,L,n1);
+      L = primeList_old(I,n3,L,n1);
       if(printlevel >= 10)
       {
-         "CPU-time for primeList: "+string(timer-tt)+" seconds.";
-         "Real-time for primeList: "+string(rtimer-rt)+" seconds.";
+         "CPU-time for primeList_old: "+string(timer-tt)+" seconds.";
+         "Real-time for primeList_old: "+string(rtimer-rt)+" seconds.";
       }
 
       if(n1 > 1)
@@ -1282,12 +1282,12 @@ EXAMPLE: example modStd; shows an example
             open(l(i));
             if((variant == 1) || (variant == 3))
             {
-               write(l(i), quote(modpStd(I_for_fork, eval(L[j+i-1]),
+               write(l(i), quote(modpStd_old(I_for_fork, eval(L[j+i-1]),
                                                      eval(variant), eval(hi))));
             }
             if((variant == 2) || (variant == 4))
             {
-               write(l(i), quote(modpStd(I_for_fork, eval(L[j+i-1]),
+               write(l(i), quote(modpStd_old(I_for_fork, eval(L[j+i-1]),
                                                      eval(variant))));
             }
          }
@@ -1300,35 +1300,35 @@ example
 { "EXAMPLE:"; echo = 2;
    ring R1 = 0,(x,y,z,t),dp;
    ideal I = 3x3+x2+1, 11y5+y3+2, 5z4+z2+4;
-   ideal J = modStd(I);
+   ideal J = modStd_old(I);
    J;
    I = homog(I,t);
-   J = modStd(I);
+   J = modStd_old(I);
    J;
 
    ring R2 = 0,(x,y,z),ds;
    ideal I = jacob(x5+y6+z7+xyz);
-   ideal J1 = modStd(I,1,0);
+   ideal J1 = modStd_old(I,1,0);
    J1;
 
    ring R3 = 0,x(1..4),lp;
    ideal I = cyclic(4);
-   ideal J1 = modStd(I,1);
-   ideal J2 = modStd(I,1,0);
+   ideal J1 = modStd_old(I,1);
+   ideal J2 = modStd_old(I,1,0);
    size(reduce(J1,J2));
    size(reduce(J2,J1));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc modS(ideal I, list L, list #)
-"USAGE:  modS(I,L); I ideal, L intvec of primes
+proc modS_old(ideal I, list L, list #)
+"USAGE:  modS_old(I,L); I ideal, L intvec of primes
          if size(#)>0 std is used instead of groebner
 RETURN:  an ideal which is with high probability a standard basis
 NOTE:    This procedure is designed for fast experiments.
          It is not tested whether the result is a standard basis.
          It is not tested whether the result generates I.
-EXAMPLE: example modS; shows an example
+EXAMPLE: example modS_old; shows an example
 "
 {
    int j;
@@ -1360,7 +1360,7 @@ EXAMPLE: example modS; shows an example
       T[j] = fetch(@r,I);
       kill @r;
    }
-   L = deleteUnluckyPrimes(T,L,homog(I));
+   L = deleteUnluckyPrimes_old(T,L,homog(I));
    // unlucky if and only if the leading ideal is wrong
    J = farey(chinrem(L[1],L[2]),N);
    attrib(J,"isSB",1);
@@ -1372,26 +1372,26 @@ example
    ring r = 0,(x,y,z,t),dp;
    ideal I = 3x3+x2+1,11y5+y3+2,5z4+z2+4;
    I = homog(I,t);
-   ideal J = modS(I,L);
+   ideal J = modS_old(I,L);
    J;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc modHenselStd(ideal I, list #)
-"USAGE:  modHenselStd(I);
+proc modHenselStd_old(ideal I, list #)
+"USAGE:  modHenselStd_old(I);
 RETURN:  a standard basis of I;
 NOTE:    The procedure computes a standard basis of I (over the rational
          numbers) by using  modular computations and Hensellifting.
-         For further experiments see procedure modS.
-EXAMPLE: example modHenselStd; shows an example
+         For further experiments see procedure modS_old.
+EXAMPLE: example modHenselStd_old; shows an example
 "
 {
    int i,j;
 
    bigint p = 2134567879;
    if(size(#)!=0) { p=#[1]; }
-   while(!primeTest(I,p))
+   while(!primeTest_old(I,p))
    {
       p = prime(random(2000000000,2134567879));
    }
@@ -1445,7 +1445,7 @@ EXAMPLE: example modHenselStd; shows an example
       {
          if(size(reduce(I,testG1)) == 0)       // I is in testG1
          {
-            if(pTestSB(I,testG1,L,2))
+            if(pTestSB_old(I,testG1,L,2))
             {
                G3 = std(testG1);               // testG1 is SB
                if(size(reduce(G3,testG1)) == 0)
@@ -1464,7 +1464,7 @@ example
 { "EXAMPLE:"; echo = 2;
    ring r = 0,(x,y,z),dp;
    ideal I = 3x3+x2+1,11y5+y3+2,5z4+z2+4;
-   ideal J = modHenselStd(I);
+   ideal J = modHenselStd_old(I);
    J;
 }
 
