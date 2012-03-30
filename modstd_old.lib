@@ -719,7 +719,7 @@ example
 
 ////////////////////////////// main procedures /////////////////////////////////
 
-proc modStd(ideal I, list #)
+proc modStd_old(ideal I, list #)
 "USAGE:  modStd(I); I ideal
 ASSUME:  If size(#) > 0, then # contains either 1, 2 or 4 integers such that
 @*       - #[1] is the number of available processors for the computation,
