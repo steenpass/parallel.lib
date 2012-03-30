@@ -374,37 +374,6 @@ example
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc primeTest(def II, bigint p)
-{
-   if(typeof(II) == "string")
-   {
-      execute("ideal I = "+II+";");
-   }
-   else
-   {
-      ideal I = II;
-   }
-
-   int i,j;
-   poly f;
-   number cnt;
-   for(i = 1; i <= size(I); i++)
-   {
-      f = cleardenom(I[i]);
-      if(f == 0) { return(0); }
-      cnt = leadcoef(I[i])/leadcoef(f);
-      if((numerator(cnt) mod p) == 0) { return(0); }
-      if((denominator(cnt) mod p) == 0) { return(0); }
-      for(j = size(f); j > 0; j--)
-      {
-         if((leadcoef(f[j]) mod p) == 0) { return(0); }
-      }
-   }
-   return(1);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 proc primeList(ideal I, int n, list #)
 "USAGE:  primeList(I,n[,ncores]); ( resp. primeList(I,n[,L,ncores]); ) I ideal,
          n integer
