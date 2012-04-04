@@ -408,7 +408,7 @@ EXAMPLE: example primList; shows an example
    if(size(#) == 0)
    {
       p = 2147483647;
-      while(!primeTest(I,p))
+      while(!primeTest_std(p, list(I)))
       {
          p = prime(p-1);
          if(p == 2) { ERROR("no more primes"); }
@@ -419,7 +419,7 @@ EXAMPLE: example primList; shows an example
    {
       L = #[1];
       p = prime(L[size(L)]-1);
-      while(!primeTest(I,p))
+      while(!primeTest_std(p, list(I)))
       {
          p = prime(p-1);
          if(p == 2) { ERROR("no more primes"); }
@@ -432,7 +432,7 @@ EXAMPLE: example primList; shows an example
       for(i = 2; i <= n; i++)
       {
          p = prime(p-1);
-         while(!primeTest(I,p))
+         while(!primeTest_std(p, list(I)))
          {
             p = prime(p-1);
             if(p == 2) { ERROR("no more primes"); }
@@ -454,14 +454,14 @@ EXAMPLE: example primList; shows an example
          {
             p = prime(p-1);
             if(p == 2) { ERROR("no more primes"); }
-            arguments[i] = list("I", p);
+            arguments[i] = list(p, "I");
          }
-         parallelResults = parallelWaitAll("primeTest", arguments);
+         parallelResults = parallelWaitAll("primeTest_std", arguments);
          for(i = size(arguments); i > 0; i--)
          {
             if(parallelResults[i])
             {
-               L[size(L)+1] = arguments[i][2];
+               L[size(L)+1] = arguments[i][1];
             }
          }
          neededPrimes = neededSize-size(L);
@@ -1469,7 +1469,7 @@ proc pTest_std(string command, list args, def result, list primes)
       }
       if(j)
       {
-         if(!primeTest(I,p)) { j = 0; }
+         if(!primeTest_std(p, I)) { j = 0; }
       }
    }
    r[1] = p;
