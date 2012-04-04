@@ -179,7 +179,7 @@ proc pTest_modstd(string command, list args, def result, list primes)
       }
       if(j)
       {
-         if(!primeTest(I,p)) { j = 0; }
+         if(!primeTest_modstd(p, list(I))) { j = 0; }
       }
    }
    r[1] = p;
