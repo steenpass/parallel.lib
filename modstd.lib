@@ -373,19 +373,18 @@ example
 ////////////////////////////////////////////////////////////////////////////////
 
 proc modpStd(ideal i, int variant, list #)
-"USAGE:  modpStd(I,p,variant,#); I ideal, p integer, variant integer
+"USAGE:  modpStd(I, variant, #); I ideal, variant integer
 ASSUME:  If size(#) > 0, then #[1] is an intvec describing the Hilbert series.
 RETURN:  ideal - a standard basis of I mod p, integer - p
-NOTE:    The procedure computes a standard basis of the ideal I modulo p and
-         fetches the result to the basering. If size(#) > 0 the Hilbert driven
+NOTE:    The procedure computes a standard basis of the ideal I.
+         If size(#) > 0 the Hilbert driven
          standard basis computation std(.,#[1]) is used instead of groebner.
-         The standard basis computation modulo p does also vary depending on the
+         The standard basis computation also varies depending on the
          integer variant, namely
 @*       - variant = 1: std(.,#[1]) resp. groebner,
 @*       - variant = 2: groebner,
 @*       - variant = 3: homog. - std(.,#[1]) resp. groebner - dehomog.,
 @*       - variant = 4: fglm.
-EXAMPLE: example modpStd; shows an example
 "
 {
    option(redSB);
@@ -464,20 +463,6 @@ EXAMPLE: example modpStd; shows an example
    }
 
    return(i);
-}
-example
-{ "EXAMPLE:"; echo = 2;
-   ring r = 0, x(1..4), dp;
-   ideal I = cyclic(4);
-   int p = 181;
-   list P = modpStd(I,p,2);
-   P;
-
-   ring r2 = 0, x(1..5), lp;
-   ideal I = cyclic(5);
-   int q = 32003;
-   list Q = modpStd(I,q,4);
-   Q;
 }
 
 ////////////////////////////// main procedures /////////////////////////////////
