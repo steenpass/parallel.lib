@@ -984,7 +984,7 @@ static proc variant_std()
    {
       if(h)
       {
-         variant = 1;
+         return(1);
       }
       else
       {
@@ -993,7 +993,7 @@ static proc variant_std()
 
          if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
          {
-            variant = 2;
+            return(2);
          }
          else
          {
@@ -1009,7 +1009,7 @@ static proc variant_std()
 
             if((order == "simple") || (size(rl) > 4))
             {
-               variant = 2;
+               return(2);
             }
             else
             {
@@ -1022,11 +1022,11 @@ static proc variant_std()
                ideal I = std(fetch(R0,I));
                if(dim(I) == 0)
                {
-                  variant = 4;
+                  return(4);
                }
                else
                {
-                  variant = 3;
+                  return(3);
                }
 
                setring R0;
@@ -1040,7 +1040,7 @@ static proc variant_std()
       if(exactness == 1) { return(groebner(I)); }
       if(h)
       {
-         variant = 1;
+         return(1);
       }
       else
       {
@@ -1049,7 +1049,7 @@ static proc variant_std()
 
          if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
          {
-            variant = 2;
+            return(2);
          }
          else
          {
@@ -1065,11 +1065,11 @@ static proc variant_std()
 
             if((order == "simple") || (size(rl) > 4))
             {
-               variant = 2;
+               return(2);
             }
             else
             {
-               variant = 3;
+               return(3);
             }
          }
       }
