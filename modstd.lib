@@ -372,7 +372,7 @@ example
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc modpStd(ideal I, int p, int variant, list #)
+proc modpStd(ideal i, int variant, list #)
 "USAGE:  modpStd(I,p,variant,#); I ideal, p integer, variant integer
 ASSUME:  If size(#) > 0, then #[1] is an intvec describing the Hilbert series.
 RETURN:  ideal - a standard basis of I mod p, integer - p
@@ -388,13 +388,6 @@ NOTE:    The procedure computes a standard basis of the ideal I modulo p and
 EXAMPLE: example modpStd; shows an example
 "
 {
-   def R0 = basering;
-   list rl = ringlist(R0);
-   rl[1] = p;
-   def @r = ring(rl);
-   setring @r;
-   ideal i = fetch(R0,I);
-
    option(redSB);
 
    if(variant == 1)
@@ -470,8 +463,7 @@ EXAMPLE: example modpStd; shows an example
       i = fglm(R1,i);
    }
 
-   setring R0;
-   return(list(fetch(@r,i),p));
+   return(i);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -996,6 +988,7 @@ proc pTest_std(string command, list args, def result, list primes)
    {
       if(size(#) > 0)
       {
+         // caution! design of modpStd has changed
          ideal K = modpStd(I,p,variant,#[1])[1];
       }
       else
