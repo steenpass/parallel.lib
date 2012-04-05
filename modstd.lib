@@ -633,6 +633,19 @@ EXAMPLE: example modStd; shows an example
       "variant = "+string(variant);
    }
 
+   if(variant == 1)
+   {
+      rl[1] = L[5];
+      def @r = ring(rl);
+      setring @r;
+      def @s = changeord("dp");
+      setring @s;
+      ideal I = std(fetch(R0,I));
+      intvec hi = hilb(I,1);
+      setring R0;
+      kill @r,@s;
+   }
+
    list P,T1,T2,T3,LL;
 
    ideal J,K,H;
@@ -948,16 +961,6 @@ static proc variant_std()
       if(h)
       {
          variant = 1;
-
-         rl[1] = L[5];
-         def @r = ring(rl);
-         setring @r;
-         def @s = changeord("dp");
-         setring @s;
-         ideal I = std(fetch(R0,I));
-         intvec hi = hilb(I,1);
-         setring R0;
-         kill @r,@s;
       }
       else
       {
@@ -1030,15 +1033,6 @@ static proc variant_std()
       if(h)
       {
          variant = 1;
-         rl[1] = L[5];
-         def @r = ring(rl);
-         setring @r;
-         def @s = changeord("dp");
-         setring @s;
-         ideal I = std(fetch(R0,I));
-         intvec hi = hilb(I,1);
-         setring R0;
-         kill @r,@s;
       }
       else
       {
