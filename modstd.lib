@@ -627,166 +627,6 @@ EXAMPLE: example modStd; shows an example
    tt = timer;
    rt = rtimer;
 
-   if(!mixedTest())
-   {
-      if(h)
-      {
-         variant = 1;
-         if(printlevel >= 10) { "variant = 1"; }
-
-         rl[1] = L[5];
-         def @r = ring(rl);
-         setring @r;
-         def @s = changeord("dp");
-         setring @s;
-         ideal I = std(fetch(R0,I));
-         intvec hi = hilb(I,1);
-         setring R0;
-         kill @r,@s;
-      }
-      else
-      {
-         string ordstr_R0 = ordstr(R0);
-         int neg = 1 - attrib(R0,"global");
-
-         if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
-         {
-            variant = 2;
-            if(printlevel >= 10) { "variant = 2"; }
-         }
-         else
-         {
-            string order;
-            if(system("nblocks") <= 2)
-            {
-               if(find(ordstr_R0, "M") + find(ordstr_R0, "lp")
-                                       + find(ordstr_R0, "rp") <= 0)
-               {
-                  order = "simple";
-               }
-            }
-
-            if((order == "simple") || (size(rl) > 4))
-            {
-               variant = 2;
-               if(printlevel >= 10) { "variant = 2"; }
-            }
-            else
-            {
-               rl[1] = L[5];
-               def @r = ring(rl);
-               setring @r;
-
-               def @s = changeord("dp");
-               setring @s;
-               ideal I = std(fetch(R0,I));
-               if(dim(I) == 0)
-               {
-                  variant = 4;
-                  if(printlevel >= 10) { "variant = 4"; }
-               }
-               else
-               {
-                  variant = 3;
-                  if(printlevel >= 10) { "variant = 3"; }
-
-                  int nvar@r = nvars(@r);
-                  intvec w;
-                  for(i = 1; i <= nvar@r; i++)
-                  {
-                     w[i] = deg(var(i));
-                  }
-                  w[nvar@r + 1] = 1;
-
-                  list hiRi = hilbRing(fetch(R0,I),w);
-                  intvec W = hiRi[2];
-                  @s = hiRi[1];
-                  setring @s;
-
-                  Id(1) = std(Id(1));
-                  intvec hi = hilb(Id(1), 1, W);
-               }
-
-               setring R0;
-               kill @r,@s;
-            }
-         }
-      }
-   }
-   else
-   {
-      if(exactness == 1) { return(groebner(I)); }
-      if(h)
-      {
-         variant = 1;
-         if(printlevel >= 10) { "variant = 1"; }
-         rl[1] = L[5];
-         def @r = ring(rl);
-         setring @r;
-         def @s = changeord("dp");
-         setring @s;
-         ideal I = std(fetch(R0,I));
-         intvec hi = hilb(I,1);
-         setring R0;
-         kill @r,@s;
-      }
-      else
-      {
-         string ordstr_R0 = ordstr(R0);
-         int neg = 1 - attrib(R0,"global");
-
-         if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
-         {
-            variant = 2;
-            if(printlevel >= 10) { "variant = 2"; }
-         }
-         else
-         {
-            string order;
-            if(system("nblocks") <= 2)
-            {
-               if(find(ordstr_R0, "M") + find(ordstr_R0, "lp")
-                                       + find(ordstr_R0, "rp") <= 0)
-               {
-                  order = "simple";
-               }
-            }
-
-            if((order == "simple") || (size(rl) > 4))
-            {
-               variant = 2;
-               if(printlevel >= 10) { "variant = 2"; }
-            }
-            else
-            {
-               variant = 3;
-               if(printlevel >= 10) { "variant = 3"; }
-
-               rl[1] = L[5];
-               def @r = ring(rl);
-               setring @r;
-               int nvar@r = nvars(@r);
-               intvec w;
-               for(i = 1; i <= nvar@r; i++)
-               {
-                  w[i] = deg(var(i));
-               }
-               w[nvar@r + 1] = 1;
-
-               list hiRi = hilbRing(fetch(R0,I),w);
-               intvec W = hiRi[2];
-               def @s = hiRi[1];
-               setring @s;
-
-               Id(1) = std(Id(1));
-               intvec hi = hilb(Id(1), 1, W);
-
-               setring R0;
-               kill @r,@s;
-            }
-         }
-      }
-   }
 
    list P,T1,T2,T3,LL;
 
@@ -1094,6 +934,170 @@ example
    ideal J2 = modStd(I,1,0);
    size(reduce(J1,J2));
    size(reduce(J2,J1));
+}
+
+static proc variant_std()
+{
+   if(!mixedTest())
+   {
+      if(h)
+      {
+         variant = 1;
+         if(printlevel >= 10) { "variant = 1"; }
+
+         rl[1] = L[5];
+         def @r = ring(rl);
+         setring @r;
+         def @s = changeord("dp");
+         setring @s;
+         ideal I = std(fetch(R0,I));
+         intvec hi = hilb(I,1);
+         setring R0;
+         kill @r,@s;
+      }
+      else
+      {
+         string ordstr_R0 = ordstr(R0);
+         int neg = 1 - attrib(R0,"global");
+
+         if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
+         {
+            variant = 2;
+            if(printlevel >= 10) { "variant = 2"; }
+         }
+         else
+         {
+            string order;
+            if(system("nblocks") <= 2)
+            {
+               if(find(ordstr_R0, "M") + find(ordstr_R0, "lp")
+                                       + find(ordstr_R0, "rp") <= 0)
+               {
+                  order = "simple";
+               }
+            }
+
+            if((order == "simple") || (size(rl) > 4))
+            {
+               variant = 2;
+               if(printlevel >= 10) { "variant = 2"; }
+            }
+            else
+            {
+               rl[1] = L[5];
+               def @r = ring(rl);
+               setring @r;
+
+               def @s = changeord("dp");
+               setring @s;
+               ideal I = std(fetch(R0,I));
+               if(dim(I) == 0)
+               {
+                  variant = 4;
+                  if(printlevel >= 10) { "variant = 4"; }
+               }
+               else
+               {
+                  variant = 3;
+                  if(printlevel >= 10) { "variant = 3"; }
+
+                  int nvar@r = nvars(@r);
+                  intvec w;
+                  for(i = 1; i <= nvar@r; i++)
+                  {
+                     w[i] = deg(var(i));
+                  }
+                  w[nvar@r + 1] = 1;
+
+                  list hiRi = hilbRing(fetch(R0,I),w);
+                  intvec W = hiRi[2];
+                  @s = hiRi[1];
+                  setring @s;
+
+                  Id(1) = std(Id(1));
+                  intvec hi = hilb(Id(1), 1, W);
+               }
+
+               setring R0;
+               kill @r,@s;
+            }
+         }
+      }
+   }
+   else
+   {
+      if(exactness == 1) { return(groebner(I)); }
+      if(h)
+      {
+         variant = 1;
+         if(printlevel >= 10) { "variant = 1"; }
+         rl[1] = L[5];
+         def @r = ring(rl);
+         setring @r;
+         def @s = changeord("dp");
+         setring @s;
+         ideal I = std(fetch(R0,I));
+         intvec hi = hilb(I,1);
+         setring R0;
+         kill @r,@s;
+      }
+      else
+      {
+         string ordstr_R0 = ordstr(R0);
+         int neg = 1 - attrib(R0,"global");
+
+         if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
+         {
+            variant = 2;
+            if(printlevel >= 10) { "variant = 2"; }
+         }
+         else
+         {
+            string order;
+            if(system("nblocks") <= 2)
+            {
+               if(find(ordstr_R0, "M") + find(ordstr_R0, "lp")
+                                       + find(ordstr_R0, "rp") <= 0)
+               {
+                  order = "simple";
+               }
+            }
+
+            if((order == "simple") || (size(rl) > 4))
+            {
+               variant = 2;
+               if(printlevel >= 10) { "variant = 2"; }
+            }
+            else
+            {
+               variant = 3;
+               if(printlevel >= 10) { "variant = 3"; }
+
+               rl[1] = L[5];
+               def @r = ring(rl);
+               setring @r;
+               int nvar@r = nvars(@r);
+               intvec w;
+               for(i = 1; i <= nvar@r; i++)
+               {
+                  w[i] = deg(var(i));
+               }
+               w[nvar@r + 1] = 1;
+
+               list hiRi = hilbRing(fetch(R0,I),w);
+               intvec W = hiRi[2];
+               def @s = hiRi[1];
+               setring @s;
+
+               Id(1) = std(Id(1));
+               intvec hi = hilb(Id(1), 1, W);
+
+               setring R0;
+               kill @r,@s;
+            }
+         }
+      }
+   }
 }
 
 proc primeTest_std(int p, list args)
