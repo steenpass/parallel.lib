@@ -516,9 +516,6 @@ NOTE:    The procedure computes a standard basis of I (over the rational
 EXAMPLE: example modStd; shows an example
 "
 {
-   int TT = timer;
-   int RT = rtimer;
-
    def R0 = basering;
    list rl = ringlist(R0);
    if((npars(R0) > 0) || (rl[1] > 0))
@@ -527,13 +524,9 @@ EXAMPLE: example modStd; shows an example
              have no parameters.");
    }
 
-   int index = 1;
-   int i,k,c;
-   int j = 1;
-   int pTest, sizeTest;
+   int i;
    int en = 2134567879;
    int an = 1000000000;
-   bigint N;
 
 //--------------------  Initialize optional parameters  ------------------------
    if(size(#) > 0)
@@ -623,9 +616,6 @@ EXAMPLE: example modStd; shows an example
 //---------------------  Decide which variant to take  -------------------------
    int h = homog(I);
 
-   tt = timer;
-   rt = rtimer;
-
    int variant = variant_std(I, h, exactness, L[5]);
 
    if(printlevel >= 10)
@@ -673,10 +663,6 @@ EXAMPLE: example modStd; shows an example
       setring R0;
       kill @r,@s;
    }
-
-   list P,T1,T2,T3,LL;
-
-   ideal J,K,H;
 
    if(variant == 2)
    {
