@@ -684,53 +684,6 @@ EXAMPLE: example modStd; shows an example
          pTest_std, finalTest_std));
    }
 
-//-----  If there is more than one processor available, we parallelize the  ----
-//-----  main standard basis computations in positive characteristic        ----
-
-   if(n1 > 1)
-   {
-      ideal I_for_fork = I;
-      export(I_for_fork);           // I available for each link
-
-//-----  Create n1 links l(1),...,l(n1), open all of them and compute  ---------
-//-----  standard basis for the primes L[2],...,L[n1 + 1].             ---------
-
-      for(i = 1; i <= n1; i++)
-      {
-         //link l(i) = "MPtcp:fork";
-         link l(i) = "ssi:fork";
-         open(l(i));
-         if((variant == 1) || (variant == 3))
-         {
-            write(l(i), quote(modpStd(I_for_fork, eval(L[i + 1]),
-                                                  eval(variant), eval(hi))));
-         }
-         if((variant == 2) || (variant == 4))
-         {
-            write(l(i), quote(modpStd(I_for_fork, eval(L[i + 1]),
-                                                  eval(variant))));
-         }
-      }
-
-      int t = timer;
-      if((variant == 1) || (variant == 3))
-      {
-         P = modpStd(I_for_fork, L[1], variant, hi);
-      }
-      if((variant == 2) || (variant == 4))
-      {
-         P = modpStd(I_for_fork, L[1], variant);
-      }
-      t = (timer - t) div system("--ticks-per-sec");
-      if(t > 60) { t = 60; }
-      int i_sleep = system("sh", "sleep "+string(t));
-      T1[1] = P[1];
-      T2[1] = bigint(P[2]);
-      index++;
-
-      j = j + n1 + 1;
-   }
-
 //--------------  Main standard basis computations in positive  ----------------
 //----------------------  characteristic start here  ---------------------------
 
