@@ -626,13 +626,17 @@ EXAMPLE: example modStd; shows an example
    tt = timer;
    rt = rtimer;
 
-   int variant = variant_std(h);
+   int variant = variant_std(I, h, exactness, L[5]);
 
    if(printlevel >= 10)
    {
       "variant = "+string(variant);
    }
 
+   if(variant == 0)
+   {
+      return(groebner(I));
+   }
    if(variant == 1)
    {
       rl[1] = L[5];
@@ -978,8 +982,11 @@ example
    size(reduce(J2,J1));
 }
 
-static proc variant_std()
+static proc variant_std(alias ideal I, int h, int exactness, int p)
 {
+   def R0 = basering;
+   list rl = ringlist(R0);
+
    if(!mixedTest())
    {
       if(h)
@@ -1013,7 +1020,7 @@ static proc variant_std()
             }
             else
             {
-               rl[1] = L[5];
+               rl[1] = p;
                def @r = ring(rl);
                setring @r;
 
@@ -1022,22 +1029,23 @@ static proc variant_std()
                ideal I = std(fetch(R0,I));
                if(dim(I) == 0)
                {
+                  setring R0;
+                  kill @r,@s;
                   return(4);
                }
                else
                {
+                  setring R0;
+                  kill @r,@s;
                   return(3);
                }
-
-               setring R0;
-               kill @r,@s;
             }
          }
       }
    }
    else
    {
-      if(exactness == 1) { return(groebner(I)); }
+      if(exactness == 1) { return(0); }
       if(h)
       {
          return(1);
