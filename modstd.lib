@@ -641,12 +641,21 @@ EXAMPLE: example modStd; shows an example
       kill @r,@s;
    }
 
-   if(variant == 2)
+   list args_modpStd;
+   if(variant == 1 || variant == 3)
    {
-      return(modular("std", list(I), primeTest_std, deleteUnluckyPrimes_std,
-         pTest_std, finalTest_std));
+      args_modpStd = list(I, variant, hi);
+   }
+   if(variant == 2 || variant == 4)
+   {
+      args_modpStd = list(I, variant);
    }
 
+   ideal J = modular("modpStd", args_modpStd, primeTest_std,
+      deleteUnluckyPrimes_std, pTest_std, finalTest_std);
+
+   option(set, opt);
+   return(J);
 }
 example
 { "EXAMPLE:"; echo = 2;
