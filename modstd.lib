@@ -621,12 +621,17 @@ EXAMPLE: example modStd; shows an example
    L[5] = prime(random(an,en));
 
 //---------------------  Decide which variant to take  -------------------------
-   int variant;
    int h = homog(I);
 
    tt = timer;
    rt = rtimer;
 
+   int variant = variant_std(h);
+
+   if(printlevel >= 10)
+   {
+      "variant = "+string(variant);
+   }
 
    list P,T1,T2,T3,LL;
 
@@ -943,7 +948,6 @@ static proc variant_std()
       if(h)
       {
          variant = 1;
-         if(printlevel >= 10) { "variant = 1"; }
 
          rl[1] = L[5];
          def @r = ring(rl);
@@ -963,7 +967,6 @@ static proc variant_std()
          if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
          {
             variant = 2;
-            if(printlevel >= 10) { "variant = 2"; }
          }
          else
          {
@@ -980,7 +983,6 @@ static proc variant_std()
             if((order == "simple") || (size(rl) > 4))
             {
                variant = 2;
-               if(printlevel >= 10) { "variant = 2"; }
             }
             else
             {
@@ -994,12 +996,10 @@ static proc variant_std()
                if(dim(I) == 0)
                {
                   variant = 4;
-                  if(printlevel >= 10) { "variant = 4"; }
                }
                else
                {
                   variant = 3;
-                  if(printlevel >= 10) { "variant = 3"; }
 
                   int nvar@r = nvars(@r);
                   intvec w;
@@ -1030,7 +1030,6 @@ static proc variant_std()
       if(h)
       {
          variant = 1;
-         if(printlevel >= 10) { "variant = 1"; }
          rl[1] = L[5];
          def @r = ring(rl);
          setring @r;
@@ -1049,7 +1048,6 @@ static proc variant_std()
          if((find(ordstr_R0, "M") > 0) || (find(ordstr_R0, "a") > 0) || neg)
          {
             variant = 2;
-            if(printlevel >= 10) { "variant = 2"; }
          }
          else
          {
@@ -1066,12 +1064,10 @@ static proc variant_std()
             if((order == "simple") || (size(rl) > 4))
             {
                variant = 2;
-               if(printlevel >= 10) { "variant = 2"; }
             }
             else
             {
                variant = 3;
-               if(printlevel >= 10) { "variant = 3"; }
 
                rl[1] = L[5];
                def @r = ring(rl);
