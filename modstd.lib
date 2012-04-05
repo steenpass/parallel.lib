@@ -579,21 +579,11 @@ EXAMPLE: example modStd; shows an example
 
    option(redSB);
 
-//--------------------  Initialize the list of primes  -------------------------
-   int tt = timer;
-   int rt = rtimer;
-   intvec L = primeList(I,n2,n1);
-   if(printlevel >= 10)
-   {
-      "CPU-time for primeList: "+string(timer-tt)+" seconds.";
-      "Real-time for primeList: "+string(rtimer-rt)+" seconds.";
-   }
-   L[5] = prime(random(an,en));
-
 //---------------------  Decide which variant to take  -------------------------
+   int P = prime(random(an,en));
    int h = homog(I);
 
-   int variant = variant_std(I, h, exactness, L[5]);
+   int variant = variant_std(I, h, exactness, P);
 
    if(printlevel >= 10)
    {
@@ -606,7 +596,7 @@ EXAMPLE: example modStd; shows an example
    }
    if(variant == 1)
    {
-      rl[1] = L[5];
+      rl[1] = P;
       def @r = ring(rl);
       setring @r;
       def @s = changeord("dp");
@@ -618,7 +608,7 @@ EXAMPLE: example modStd; shows an example
    }
    if(variant == 3)
    {
-      rl[1] = L[5];
+      rl[1] = P;
       def @r = ring(rl);
       setring @r;
       int nvar@r = nvars(@r);
