@@ -792,8 +792,10 @@ proc pTest_std(string command, list args, def result, list primes)
    {
       if(size(#) > 0)
       {
-         // caution! design of modpStd has changed
-         ideal K = modpStd(I,p,variant,#[1])[1];
+         // caution! design of modpStd has changed.
+         // This has to be changed later on. For the moment,
+         // this case never happens anyway.
+         // ideal K = modpStd(I,p,variant,#[1])[1];
       }
       else
       {
