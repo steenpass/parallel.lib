@@ -63,101 +63,36 @@ example
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static proc redFork(ideal I, ideal J, int n)
+proc redFork(ideal I, ideal J)
 {
-   attrib(J,"isSB",1);
-   return(reduce(I,J,1));
+   if(reduce(I, J, 1) == 0)
+   {
+      return(1);
+   }
+   else
+   {
+      return(0);
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc isIncluded(ideal I, ideal J, list #)
+proc isIncluded(ideal I, ideal J)
 "USAGE:  isIncluded(I,J); I,J ideals
 RETURN:  1 if J includes I,
 @*       0 if there is an element f in I which does not reduce to 0 w.r.t. J.
 EXAMPLE: example isIncluded; shows an example
 "
 {
-   def R = basering;
-   setring R;
-
    attrib(J,"isSB",1);
-   int i,j,k;
 
-   if(size(#) > 0)
+   list args;
+   int i;
+   for(i = ncols(I); i > 0; i--)
    {
-      int n = #[1];
-      if(n >= ncols(I)) { n = ncols(I); }
-      if(n > 1)
-      {
-         for(i = 1; i <= n - 1; i++)
-         {
-            //link l(i) = "MPtcp:fork";
-            link l(i) = "ssi:fork";
-            open(l(i));
-
-            write(l(i), quote(redFork(eval(I[ncols(I)-i]), eval(J), 1)));
-         }
-
-         int t = timer;
-         if(reduce(I[ncols(I)], J, 1) != 0)
-         {
-            for(i = 1; i <= n - 1; i++)
-            {
-               close(l(i));
-            }
-            return(0);
-         }
-         t = (timer - t) div system("--ticks-per-sec");
-         if(t > 60) { t = 60; }
-         int i_sleep = system("sh", "sleep "+string(t));
-
-         j = ncols(I) - n;
-
-         while(j >= 0)
-         {
-            for(i = 1; i <= n - 1; i++)
-            {
-               if(status(l(i), "read", "ready"))
-               {
-                  if(read(l(i)) != 0)
-                  {
-                     for(i = 1; i <= n - 1; i++)
-                     {
-                        close(l(i));
-                     }
-                     return(0);
-                  }
-                  else
-                  {
-                     if(j >= 1)
-                     {
-                        write(l(i), quote(redFork(eval(I[j]), eval(J), 1)));
-                        j--;
-                     }
-                     else
-                     {
-                        k++;
-                        close(l(i));
-                     }
-                  }
-               }
-            }
-            if(k == n - 1)
-            {
-               j--;
-            }
-            i_sleep = system("sh", "sleep "+string(t));
-         }
-         return(1);
-      }
+      args[i] = list(I[i], J);
    }
-
-   for(i = ncols(I); i >= 1; i--)
-   {
-      if(reduce(I[i],J,1) != 0){ return(0); }
-   }
-   return(1);
+   return(parallelTestAND("redFork", args));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -166,12 +101,11 @@ example
    ideal J = x+1,y;
    isIncluded(I,J);
    isIncluded(J,I);
-   isIncluded(I,J,4);
 
    ring R = 0, x(1..5), dp;
    ideal I1 = cyclic(4);
    ideal I2 = I1,x(5)^2;
-   isIncluded(I1,I2,4);
+   isIncluded(I1,I2);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
