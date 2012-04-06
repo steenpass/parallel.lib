@@ -273,6 +273,60 @@ example
   parallelWaitAll(command, args);
 }
 
+proc parallelTestAND(def commands, list args, list #)
+"USAGE:   parallelTestAND(commands, args[, timeout, linktype]);
+          commands list or string, args list, timeout int, linktype string
+RETURN:   
+NOTE:     
+SEE ALSO: Ssi links, MP links, waitfirst
+KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
+          Skeletons for parallelization; Distributed computing
+EXAMPLE:  @code{example parallelTestAND;} shows an example."
+{
+  list results = parallelWaitAll(commands, args, #);
+  int i;
+  for(i = size(results); i > 0; i--)
+  {
+    if(!results[i])
+    {
+      return(0);
+    }
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:";
+  echo = 2;
+}
+
+proc parallelTestOR(def commands, list args, list #)
+"USAGE:   parallelTestOR(commands, args[, timeout, linktype]);
+          commands list or string, args list, timeout int, linktype string
+RETURN:   
+NOTE:     
+SEE ALSO: Ssi links, MP links, waitfirst
+KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
+          Skeletons for parallelization; Distributed computing
+EXAMPLE:  @code{example parallelTestAND;} shows an example."
+{
+  list results = parallelWaitAll(commands, args, #);
+  int i;
+  for(i = size(results); i > 0; i--)
+  {
+    if(results[i])
+    {
+      return(1);
+    }
+  }
+  return(0);
+}
+example
+{
+  "EXAMPLE:";
+  echo = 2;
+}
+
 // TODO
 /* worker farm */
 static proc Create() {}
