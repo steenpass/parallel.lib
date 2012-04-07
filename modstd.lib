@@ -314,6 +314,7 @@ NOTE:    The procedure computes a standard basis of I (over the rational
 EXAMPLE: example modStd; shows an example
 "
 {
+//-----------------------------  Preliminaries  --------------------------------
    def R0 = basering;
    list rl = ringlist(R0);
    if((npars(R0) > 0) || (rl[1] > 0))
@@ -323,8 +324,6 @@ EXAMPLE: example modStd; shows an example
    }
 
    int i;
-   int en = 2134567879;
-   int an = 1000000000;
 
 //--------------------  Initialize optional parameters  ------------------------
    int exactness = 1;
@@ -351,7 +350,7 @@ EXAMPLE: example modStd; shows an example
    option(redSB);
 
 //---------------------  Decide which variant to take  -------------------------
-   int P = prime(random(an,en));
+   int P = prime(random(1000000000, 2134567879));
    int h = homog(I);
 
    int variant = variant_std(I, h, exactness, P);
@@ -402,6 +401,7 @@ EXAMPLE: example modStd; shows an example
       kill @r,@s;
    }
 
+//----------------------------  Call modular()  --------------------------------
    list args_modpStd;
    if(variant == 1 || variant == 3)
    {
