@@ -326,72 +326,22 @@ EXAMPLE: example modStd; shows an example
    int an = 1000000000;
 
 //--------------------  Initialize optional parameters  ------------------------
+   int exactness = 1;
+   list modoptions;
+
    if(size(#) > 0)
    {
-      if(size(#) == 1)
+      if(typeof(#[1]) != "int")
       {
-         int n1 = #[1];
-         int exactness = 1;
-         if(n1 >= 10)
-         {
-            int n2 = n1 + 1;
-            int n3 = n1;
-         }
-         else
-         {
-            int n2 = 10;
-            int n3 = 10;
-         }
+         ERROR("wrong optional parameters");
       }
-      if(size(#) == 2)
-      {
-         int n1 = #[1];
-         int exactness = #[2];
-         if(n1 >= 10)
-         {
-            int n2 = n1 + 1;
-            int n3 = n1;
-         }
-         else
-         {
-            int n2 = 10;
-            int n3 = 10;
-         }
-      }
-      if(size(#) == 4)
-      {
-         int n1 = #[1];
-         int exactness = #[2];
-         if(n1 >= #[3])
-         {
-            int n2 = n1 + 1;
-         }
-         else
-         {
-            int n2 = #[3];
-         }
-         if(n1 >= #[4])
-         {
-            int n3 = n1;
-         }
-         else
-         {
-            int n3 = #[4];
-         }
-      }
-   }
-   else
-   {
-      int n1 = 1;
-      int exactness = 1;
-      int n2 = 10;
-      int n3 = 10;
+      exactness = #[1];
+      modoptions = delete(#, 1);
    }
 
    if(printlevel >= 10)
    {
-      "n1 = "+string(n1)+", n2 = "+string(n2)+", n3 = "+string(n3)
-       +", exactness = "+string(exactness);
+      "exactness = "+string(exactness);
    }
 
 //-------------------------  Save current options  -----------------------------
@@ -461,8 +411,17 @@ EXAMPLE: example modStd; shows an example
       args_modpStd = list(I, variant);
    }
 
-   ideal J = modular("modpStd", args_modpStd, primeTest_std,
-      deleteUnluckyPrimes_std, pTest_std, finalTest_std);
+   ideal J;
+   if(exactness)
+   {
+      J = modular("modpStd", args_modpStd, primeTest_std,
+         deleteUnluckyPrimes_std, pTest_std, finalTest_std, modoptions);
+   }
+   else
+   {
+      J = modular("modpStd", args_modpStd, primeTest_std,
+         deleteUnluckyPrimes_std, pTest_std, "", modoptions);
+   }
 
    option(set, opt);
    return(J);
