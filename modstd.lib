@@ -289,27 +289,28 @@ NOTE:    The procedure computes a standard basis of the ideal I.
 
 proc modStd(ideal I, list #)
 "USAGE:  modStd(I); I ideal
-ASSUME:  If size(#) > 0, then # contains either 1, 2 or 4 integers such that
-@*       - #[1] is the number of available processors for the computation,
-@*       - #[2] is an optional parameter for the exactness of the computation,
-                if #[2] = 1, the procedure computes a standard basis for sure,
-@*       - #[3] is the number of primes until the first lifting,
-@*       - #[4] is the constant number of primes between two liftings until
-           the computation stops.
+ASSUME:  If size(#) > 0, then #[1] is an optional parameter for the exactness
+         of the computation. If #[1] = 1 (default), the procedure computes
+         a standard basis of I for sure; if #[1] = 0, it computes a standard
+         basis with high probability.
+@*       The remaining optional parameters are passed directly to
+         @ref{modular}. Please refer to the corresponding manual page for more
+         details.
 RETURN:  a standard basis of I if no warning appears;
 NOTE:    The procedure computes a standard basis of I (over the rational
          numbers) by using modular methods.
-         By default the procedure computes a standard basis of I for sure, but
-         if the optional parameter #[2] = 0, it computes a standard basis of I
-         with high probability.
          The procedure distinguishes between different variants for the standard
          basis computation in positive characteristic depending on the ordering
-         of the basering, the parameter #[2] and if the ideal I is homogeneous.
+         of the basering, the parameter #[1] and if the ideal I is homogeneous.
 @*       - variant = 1, if I is homogeneous,
 @*       - variant = 2, if I is not homogeneous, 1-block-ordering,
 @*       - variant = 3, if I is not homogeneous, complicated ordering (lp or
                         > 1 block),
 @*       - variant = 4, if I is not homogeneous, ordering lp, dim(I) = 0.
+@*       To control the number of available processors for the
+         computation, which was possible by adding an optional parameter
+         in previous versions of modStd(), please refer to Singular's
+         @ref{resources.lib}.
 EXAMPLE: example modStd; shows an example
 "
 {
