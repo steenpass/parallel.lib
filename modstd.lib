@@ -552,7 +552,7 @@ static proc variant_std(alias ideal I, int h, int exactness, int p)
    }
 }
 
-proc primeTest_std(int p, list args)
+proc primeTest_std(int p, alias list args)
 {
    int i,j;
    poly f;
@@ -716,7 +716,7 @@ proc pTest_std(string command, list args, def result, list primes)
       }
       if(j)
       {
-         if(!primeTest_std(p, I)) { j = 0; }
+         if(!primeTest_std(p, args)) { j = 0; }
       }
    }
    r[1] = p;
