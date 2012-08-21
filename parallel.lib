@@ -130,13 +130,12 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   }
 
   // compute tasks
-  for(i = 1; i <= njobs; i++) {
-    link l(i) = startTask(commands[i], args[i], linktype);
-  }
-  list links = l(1..njobs);
+  list Links = startNTasks(commands, args);
+  list links = list(Links[1]);
   int nfinished;
   int tt;
   int wait;
+  int index;
   list results;
   results[njobs+1] = 0;   // prevent the list from being copied again and again
   while(nfinished < N) {
@@ -155,24 +154,16 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     if (wait < 1) {
         break;
     }
-    results[wait] = waitTask(l(wait));
-    links[wait] = def(0);
+    index = read(links[1]);
+    results[index] = read(links[1]);
     nfinished++;
   }
   if (wait == -1) {
-      ERROR("All tasks crashed.");
+    ERROR("All links crashed.");
   }
-  list poll;
-  for(i = 1; i <= njobs; i++) {
-    if(typeof(links[i]) != "none") {
-      poll = pollTask(l(i));
-      if(poll[1]) {
-        results[i] = poll[2];
-      }
-      else {
-        stopTask(l(i));
-      }
-    }
+  while (status(links[1], "read", "ready")) {
+    index = read(links[1]);
+    results[index] = read(links[1]);
   }
   results[njobs+1] = def(0);
 

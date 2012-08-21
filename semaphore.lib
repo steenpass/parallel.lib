@@ -19,6 +19,11 @@ PROCEDURES:
 
 LIB "resources.lib";
 
+static proc mod_init()
+{
+    int tmp = system("semaphore", "init", 1, 2);
+}
+
 proc startTask(string command, list arguments, list #)
 "USAGE:   startTask(command, arguments[, linktype]); command string,
           arguments list, linktype string
@@ -30,7 +35,8 @@ RETURN:   a link l, running the computation which applies command to arguments
           MP links do not work with a 64 bit version of Singular. If you want
           to use MP links, make sure that MP is available. This can be checked
           by the Singular command @code{system(\"with\", \"MP\");}.
-SEE ALSO: stopTask, waitTask, pollTask, parallel_lib, Ssi links, MP links
+SEE ALSO: startNTasks, stopTask, waitTask, pollTask, parallel_lib, Ssi links,
+          MP links
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example startTask; shows an example"
 {
@@ -83,6 +89,91 @@ static proc startTask_child(string command, list arguments)
         +");");
     export(result);
     tmp = system("semaphore", "release", 0);
+}
+
+proc startNTasks(list commands, list Arguments)
+"USAGE:   startNTasks(commands, Arguments); commands list, Arguments list
+RETURN:   a list L of two links. L[2] gives access to a supervisor link
+          (*not* in the sense of scheduling) which usually remains
+          unused, but shouldn't be closed or killed before enough
+          results are obtained. The results can be read off from L[1].
+          One result is read by applying the command read(L[1]) twice: The
+          first call gives the index (of the command and its arguments
+          within the input lists), the second call gives the actual
+          result. The next call of read(L[1]) then gives the next index
+          and so on.
+SEE ALSO: startTask, stopTask, waitTask, pollTask, parallel_lib, Ssi links,
+          MP links
+KEYWORDS: Parallelization; Links
+EXAMPLE:  example startNTasks; shows an example"
+{
+    /* check for errors */
+    // TODO
+
+    int pid = system("pid");
+    link l(pid) = "ssi:fork";
+    open(l(pid));
+    write(l(pid), quote(startNTasks_child(commands, Arguments, pid)));
+    int p = read(l(pid));
+    link L(pid) = "ssi:connect localhost:"+string(p);
+    open(L(pid));
+    return(list(L(pid), l(pid)));
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring r = 0, (x,y), dp;
+    ideal i = x, x+y;
+    list L = startNTasks(list("std", "slimgb"), list(list(i), list(i)));
+    read(L[1]);
+    read(L[1]);
+    read(L[1]);
+    read(L[1]);
+}
+
+/* This procedure has to be started within the child after forking. */
+static proc startNTasks_child(list commands, list Arguments, int pid_parent)
+{
+    int p = system("reserve", 1);
+    write(l(pid_parent), p);
+    link L(pid_parent) = system("reservedLink");
+    export(L(pid_parent));
+
+    int sem = semaphore(1);
+
+    int pid = system("pid");
+    int i;
+    int tmp;
+    for (i = size(commands); i > 0; i--) {
+        link ll(pid)(i) = "ssi:fork";
+        tmp = system("semaphore", "acquire", 1);
+        open(ll(pid)(i));
+        write(ll(pid)(i), quote(startNTasks_grandchild(commands[i],
+            Arguments[i], i, sem, pid_parent)));
+        export(ll(pid)(i));
+    }
+
+    // kill this process?
+}
+
+/* This procedure has to be started within the grandchildren after forking. */
+static proc startNTasks_grandchild(string command, list arguments, int i,
+    int sem, int pid_grandparent)
+{
+    def result;
+    int tmp = system("semaphore", "acquire", 0);
+    tmp = system("semaphore", "release", 1);
+    execute("result = "+command+"("+argsToString("arguments", size(arguments))
+        +");");
+    tmp = system("semaphore", "release", 0);
+    tmp = system("semaphore", "acquire", sem);
+    write(L(pid_grandparent), i);
+    write(L(pid_grandparent), result);
+    tmp = system("semaphore", "release", sem);
+
+    // kill this process?
+    exit;
 }
 
 proc stopTask(link l)
@@ -195,4 +286,16 @@ proc argsToString(string name, int length)
         arglist = arglist+", "+name+"["+string(i)+"]";
     }
     return(arglist);
+}
+
+proc semaphore(int n)
+{
+    int i = 1;
+    while (system("semaphore", "exists", i) == 1) {
+        i++;
+    }
+    if (system("semaphore", "init", i, n) != 1) {
+        ERROR("no more semphores");
+    }
+    return(i);
 }
