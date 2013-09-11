@@ -21,7 +21,8 @@ LIB "resources.lib";
 
 static proc mod_init()
 {
-    int tmp = system("semaphore", "init", 1, 2);
+    int tmp = system("semaphore", "init", 1, 2*system("cpu"));
+    tmp = system("semaphore", "init", 2, 2);
 }
 
 proc startTask(string command, list arguments, list #)
@@ -142,19 +143,91 @@ static proc startNTasks_child(list commands, list Arguments, int pid_parent)
 
     int sem = semaphore(1);
 
+    int ncommands = size(commands);
     int pid = system("pid");
-    int i;
+    int i = 1;
+    list links;
+    links[ncommands+1] = l(pid_parent);
     int tmp;
-    for (i = size(commands); i > 0; i--) {
+    while (i <= ncommands) {
+        if (i > 1) {
+            if (!system("semaphore", "try_acquire", 1)) {
+                break;
+            }
+        }
         link ll(pid)(i) = "ssi:fork";
-        tmp = system("semaphore", "acquire", 1);
         open(ll(pid)(i));
         write(ll(pid)(i), quote(startNTasks_grandchild(commands[i],
             Arguments[i], i, sem, pid_parent)));
-        export(ll(pid)(i));
+        links[i] = ll(pid)(i);
+        i++;
     }
-
-    // kill this process?
+    if (i <= ncommands) {
+        link sem_watchdog(pid) = "ssi:fork";
+        open(sem_watchdog(pid));
+        write(sem_watchdog(pid), quote(sem_watchdog_proc(pid)));
+        int pid_watchdog = read(sem_watchdog(pid));
+        links[ncommands+2] = sem_watchdog(pid);
+    }
+    int wait;
+    while (1) {
+        wait = waitfirst(links);
+        if (wait <= ncommands) {
+            tmp = read(links[wait]);
+            if (i <= ncommands) {
+                write(links[wait], quote(startNTasks_grandchild(commands[i],
+                    Arguments[i], eval(i), sem, pid_parent)));
+                i++;
+                if (i > ncommands && typeof(links[ncommands+2]) == "link") {
+                    tmp = system("sh", "kill -15 "+string(pid_watchdog));
+                    close(sem_watchdog(pid));
+                    links[ncommands+2] = def(0);
+                }
+            }
+            else {
+                close(links[wait]);
+                if (wait > 1) {
+                    tmp = system("semaphore", "release", 1);
+                }
+                links[wait] = def(0);
+            }
+        }
+        if (wait == ncommands+1) {
+            tmp = read(l(pid_parent));
+            if (typeof(links[ncommands+2]) == "link") {
+                tmp = system("sh", "kill -15 "+string(pid_watchdog));
+                close(sem_watchdog(pid));
+            }
+            if (typeof(links[1]) == "link") {
+                close(links[1]);
+            }
+            int j;
+            for (j = 2; j <= ncommands; j++) {
+                if (typeof(links[j]) == "link") {
+                    close(links[j]);
+                    tmp = system("semaphore", "release", 1);
+                }
+            }
+            break;
+        }
+        if (wait == ncommands+2) {
+            tmp = read(sem_watchdog(pid));
+            if (i <= ncommands) {
+                link ll(pid)(i) = "ssi:fork";
+                open(ll(pid)(i));
+                write(ll(pid)(i), quote(startNTasks_grandchild(commands[i],
+                    Arguments[i], i, sem, pid_parent)));
+                links[i] = ll(pid)(i);
+                i++;
+            }
+            if (i > ncommands) {
+                tmp = system("sh", "kill -15 "+string(pid_watchdog));
+                close(sem_watchdog(pid));
+                links[ncommands+2] = def(0);
+            }
+        }
+    }
+    write(l(pid_parent), 1);
 }
 
 /* This procedure has to be started within the grandchildren after forking. */
@@ -162,8 +235,9 @@ static proc startNTasks_grandchild(string command, list arguments, int i,
     int sem, int pid_grandparent)
 {
     def result;
-    int tmp = system("semaphore", "acquire", 0);
-    tmp = system("semaphore", "release", 1);
+    int tmp = system("semaphore", "acquire", 2);
+    tmp = system("semaphore", "acquire", 0);
+    tmp = system("semaphore", "release", 2);
     execute("result = "+command+"("+argsToString("arguments", size(arguments))
         +");");
     tmp = system("semaphore", "release", 0);
@@ -171,9 +245,17 @@ static proc startNTasks_grandchild(string command, list arguments, int i,
     write(L(pid_grandparent), i);
     write(L(pid_grandparent), result);
     tmp = system("semaphore", "release", sem);
+    return(i);
+}
 
-    // kill this process?
-    exit;
+static proc sem_watchdog_proc(int pid)
+{
+    write(sem_watchdog(pid), system("pid"));
+    int tmp;
+    while (1) {
+        tmp = system("semaphore", "acquire", 1);
+        write(sem_watchdog(pid), 1);
+    }
 }
 
 proc stopTask(link l)

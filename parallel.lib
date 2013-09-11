@@ -165,6 +165,8 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     index = read(links[1]);
     results[index] = read(links[1]);
   }
+  write(Links[2], 1);
+  int tmp = read(Links[2]);
   results[njobs+1] = def(0);
 
   // return results
