@@ -136,11 +136,14 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   int tt;
   int wait;
   int index;
+  int tmp;
   list results;
   results[njobs+1] = 0;   // prevent the list from being copied again and again
   while(nfinished < N) {
     if (timeout == 0) {
+        tmp = system("semaphore", "release", 0);
         wait = waitfirst(links);
+        tmp = system("semaphore", "acquire", 0);
     }
     else {
         tt = timeout-(rtimer-t);
@@ -148,7 +151,9 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
             break;
         }
         else {
+            tmp = system("semaphore", "release", 0);
             wait = waitfirst(links, tt);
+            tmp = system("semaphore", "acquire", 0);
         }
     }
     if (wait < 1) {
@@ -166,7 +171,7 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     results[index] = read(links[1]);
   }
   write(Links[2], 1);
-  int tmp = read(Links[2]);
+  tmp = read(Links[2]);
   results[njobs+1] = def(0);
 
   // return results
