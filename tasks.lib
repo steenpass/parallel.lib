@@ -68,6 +68,24 @@ proc killTask(task t)
     tasks[t.index] = def(0);
 }
 
+proc copyTask(task t)
+{
+    task t_copy;
+    if (t.index == 0) {
+        return(t_copy);
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        return(t_copy);
+    }
+    if (tasks[t.index].state == "started") {
+        ERROR("cannot copy a task whose state is 'started'");
+    }
+    ntasks++;
+    tasks[ntasks] = tasks[t.index];
+    t_copy.index = ntasks;
+    return(t_copy);
+}
+
 proc printTask(task t)
 {
     string out;
