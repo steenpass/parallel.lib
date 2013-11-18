@@ -177,6 +177,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
     intvec assignment = 0:nlocaltasks;
     int nlinks;
 
+    int granted_leaves;
+
     int wait;
     int id;
     int code;
@@ -187,6 +189,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
         wait = 0;
         if (nlinks == 0) {
             wait = -1;
+            granted_leaves++;
             while (-wait < nwaiting) {
                 if (system("semaphore", "try_acquire", sem_leaves) == 1) {
                     wait--;
@@ -280,8 +283,23 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 state[id] = -1;
             }
             if (code == 1) {   // wait
-                // TODO: prevent deadlock
-                if (state[id] == 0 || state[id] == 1) {   // waiting or started
+                if (state[id] == 0) {   // waiting
+                    granted_leaves++;
+                    nlinks++;
+                    link ll(pid)(nlinks) = "ssi:fork";
+                    open(ll(pid)(nlinks));
+                    links[nlinks] = ll(pid)(nlinks);
+                    write(links[nlinks],
+                        quote(startTasks_grandchild(
+                        eval(localtasks[id].index), eval(pid_parent),
+                        eval(pid), eval(nlinks), eval(sem_write))));
+                    assignment[id] = nlinks;
+                    state[id] = 1;
+                    nwaiting--;
+                    queue = removeFromQueue(queue, id);
+                    waited_for == id;
+                }
+                if (state[id] == 1) {   // started
                     waited_for = id;
                 }
                 if (state[id] == 2) {   // computed
@@ -312,7 +330,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 2) {   // result sent
                 read(links[wait]);
                 close(links[wait]);
-                if (nlinks > 1) {
+                if (nlinks > granted_leaves) {
                     tmp = system("semaphore", "release", sem_leaves);
                 }
                 links[wait] = def(0);
@@ -328,7 +346,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 0) {   // stop
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
-                    if (nlinks > 1) {
+                    if (nlinks > granted_leaves) {
                         tmp = system("semaphore", "release", sem_leaves);
                     }
                     links[assignment[id]] = def(0);
