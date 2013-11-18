@@ -15,8 +15,10 @@ PROCEDURES:
 /* initialize the (lib-)global variable NCORES */
 static proc mod_init()
 {
-    int NCORES = system("semaphore", "get_value", 0)+1;
-    export(NCORES);
+    int sem_cores = 0;   // set in kernel
+    exportto(Resources, sem_cores);
+    int NCORES = system("semaphore", "get_value", sem_cores)+1;
+    exportto(Resources, NCORES);
 }
 
 proc addcores(int n)
@@ -40,12 +42,12 @@ EXAMPLE:  example addcores; shows an example"
     int tmp;
     if (n >= 0) {
         for (i = n; i > 0; i--) {
-            tmp = system("semaphore", "release", 0);
+            tmp = system("semaphore", "release", sem_cores);
         }
     }
     else {
         for (i = n; i < 0; i++) {
-            tmp = system("semaphore", "acquire", 0);
+            tmp = system("semaphore", "acquire", sem_cores);
         }
     }
 

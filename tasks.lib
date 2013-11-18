@@ -21,17 +21,24 @@ LIB "resources.lib";
 
 static proc mod_init()
 {
-    int tmp = system("semaphore", "init", 1, system("cpu")+2);
-    tmp = system("semaphore", "init", 2, 2);
+    if (!defined(Resources)) {
+        LIB "resources.lib";
+    }
+    int sem_cores = Resources::sem_cores;
+    exportto(Tasks, sem_cores);
+    int sem_leaves = semaphore(system("cpu")+10);
+    exportto(Tasks, sem_leaves);
+    int sem_queue = semaphore(2);
+    exportto(Tasks, sem_queue);
     newstruct("task", "int index");
     newstruct("internal_task", "int id, string command, list arguments,"
         +"def result, string state, list links");
     system("install", "task", "=", createTask, 1);
     system("install", "task", "print", printTask, 1);
     list tasks;
-    export(tasks);
+    exportto(Tasks, tasks);
     int ntasks;
-    export(ntasks);
+    exportto(Tasks, ntasks);
 }
 
 proc createTask(alias string command, alias list arguments)
@@ -181,7 +188,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
         if (nlinks == 0) {
             wait = -1;
             while (-wait < nwaiting) {
-                if (system("semaphore", "try_acquire", 1) == 1) {
+                if (system("semaphore", "try_acquire", sem_leaves) == 1) {
                     wait--;
                 }
                 else {
@@ -194,7 +201,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             // wait == -1 (all links crashed) should not happen
             if (wait == 0) {
                 while (-wait < nwaiting) {
-                    if (system("semaphore", "try_acquire", 1) == 1) {
+                    if (system("semaphore", "try_acquire", sem_leaves) == 1) {
                         wait--;
                     }
                     else {
@@ -306,7 +313,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 read(links[wait]);
                 close(links[wait]);
                 if (nlinks > 1) {
-                    tmp = system("semaphore", "release", 1);
+                    tmp = system("semaphore", "release", sem_leaves);
                 }
                 links[wait] = def(0);
                 nlinks--;
@@ -322,7 +329,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
                     if (nlinks > 1) {
-                        tmp = system("semaphore", "release", 1);
+                        tmp = system("semaphore", "release", sem_leaves);
                     }
                     links[assignment[id]] = def(0);
                     nlinks--;
@@ -358,13 +365,13 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
     int pid_parent, int link_no, int sem_write)
 {
     def result;
-    int tmp = system("semaphore", "acquire", 2);
-    tmp = system("semaphore", "acquire", 0);
-    tmp = system("semaphore", "release", 2);
+    int tmp = system("semaphore", "acquire", sem_queue);
+    tmp = system("semaphore", "acquire", sem_cores);
+    tmp = system("semaphore", "release", sem_queue);
     execute("result = "+tasks[index].command+"("
         +argsToString("tasks[index].arguments", size(tasks[index].arguments))
         +");");
-    tmp = system("semaphore", "release", 0);
+    tmp = system("semaphore", "release", sem_cores);
     write(ll(pid_parent)(link_no), tasks[index].id);
     write(ll(pid_parent)(link_no), 1);
     tmp = read(ll(pid_parent)(link_no));
@@ -448,9 +455,9 @@ EXAMPLE:  example waitTask; shows an example"
     write(tasks[t.index].links[2], 1);
     int state = read(tasks[t.index].links[2]);
     if (state == 0 || state == 1) {   // waiting or started
-        int tmp = system("semaphore", "release", 0);
+        int tmp = system("semaphore", "release", sem_cores);
         tmp = waitfirst(tasks[t.index].links);
-        tmp = system("semaphore", "acquire", 0);
+        tmp = system("semaphore", "acquire", sem_cores);
     }
     // else (and now in any case): state == 2 (computed).
     // state == -1 (stopped) of state == 3 (sent) should not happen

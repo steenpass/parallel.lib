@@ -32,7 +32,18 @@ PROCEDURES:
                          wait for all of them to finish
 ";
 
+LIB "resources.lib";
 LIB "tasks.lib";
+
+static proc mod_init()
+{
+  if (!defined(Resources))
+  {
+    LIB "resources.lib";
+  }
+  int sem_cores = Resources::sem_cores;
+  exportto(Parallel, sem_cores);
+}
 
 proc parallelWaitN(list commands, list args, int N, list #)
 "USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
@@ -141,9 +152,9 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
   results[njobs+1] = 0;   // prevent the list from being copied again and again
   while(nfinished < N) {
     if (timeout == 0) {
-        tmp = system("semaphore", "release", 0);
+        tmp = system("semaphore", "release", sem_cores);
         wait = waitfirst(links);
-        tmp = system("semaphore", "acquire", 0);
+        tmp = system("semaphore", "acquire", sem_cores);
     }
     else {
         tt = timeout-(rtimer-t);
@@ -151,9 +162,9 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
             break;
         }
         else {
-            tmp = system("semaphore", "release", 0);
+            tmp = system("semaphore", "release", sem_cores);
             wait = waitfirst(links, tt);
-            tmp = system("semaphore", "acquire", 0);
+            tmp = system("semaphore", "acquire", sem_cores);
         }
     }
     if (wait < 1) {
