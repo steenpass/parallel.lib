@@ -23,77 +23,64 @@ static proc mod_init()
 {
     int tmp = system("semaphore", "init", 1, system("cpu")+2);
     tmp = system("semaphore", "init", 2, 2);
+    newstruct("task", "int index");
+    newstruct("internal_task", "int id, string command, list arguments,"
+        +"def result, string state, list links");
+    system("install", "task", "=", createTask, 1);
+    system("install", "task", "print", printTask, 1);
+    list tasks;
+    export(tasks);
+    int ntasks;
+    export(ntasks);
 }
 
-proc startTask(string command, list arguments, list #)
-"USAGE:   startTask(command, arguments[, linktype]); command string,
-          arguments list, linktype string
-RETURN:   a link l, running the computation which applies command to arguments
-          as soon as there are free resources.
-          @* An optional linktype can be provided as a string. Currently
-          supported linktypes are \"ssi\" (default, see @ref{Ssi links}) and
-          \"mp\" (see @ref{MP links}).
-          MP links do not work with a 64 bit version of Singular. If you want
-          to use MP links, make sure that MP is available. This can be checked
-          by the Singular command @code{system(\"with\", \"MP\");}.
-SEE ALSO: startNTasks, stopTask, waitTask, pollTask, parallel_lib, Ssi links,
-          MP links
-KEYWORDS: Parallelization; Links
-EXAMPLE:  example startTask; shows an example"
+proc createTask(alias string command, alias list arguments)
 {
-    /* read optional parameter */
-    string linktype = "ssi";
-    if (size(#) > 0) {
-        if (size(#) > 1 || typeof(#[1]) != "string") {
-            ERROR("wrong optional parameter");
-        }
-        linktype = #[1];
-    }
-
-    /* check for errors */
-    if (linktype != "ssi" && linktype != "mp") {
-        ERROR("invalid linktype");
-    }
-    if (linktype == "mp" && !system("with", "MP")) {
-        ERROR("MP is not available");
-    }
-
-    /* start the task */
-    if (linktype == "ssi") {
-        link l = "ssi:fork";
-    }
-    else {   // linktype == "mp"
-        link l = "MPtcp:fork";
-    }
-    open(l);
-    write(l, quote(startTask_child(command, arguments)));
-
-    /* return link */
-    return(l);
+    internal_task T;
+    ntasks++;
+    tasks[ntasks] = T;
+    tasks[ntasks].command = command;
+    tasks[ntasks].arguments = arguments;
+    tasks[ntasks].state = "created";
+    task t;
+    t.index = ntasks;
+    return(t);
 }
-example
+
+proc killTask(task t)
 {
-    "EXAMPLE:";
-    echo = 2;
-    ring r = 0, (x,y), dp;
-    ideal i = x, x+y;
-    link l = startTask("std", list(i));
-    waitTask(l);
+    if (t.index == 0) {
+        return();
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        return();
+    }
+    if (tasks[t.index].state == "started") {
+        stopTask(t);
+    }
+    tasks[t.index] = def(0);
 }
 
-/* This procedure has to be started within the child after forking. */
-static proc startTask_child(string command, list arguments)
+proc printTask(task t)
 {
-    def result;
-    int tmp = system("semaphore", "acquire", 0);
-    execute("result = "+command+"("+argsToString("arguments", size(arguments))
-        +");");
-    export(result);
-    tmp = system("semaphore", "release", 0);
+    string out;
+    if (t.index == 0) {
+        out = "An undefined task"+newline;
+        return(out);
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        out = "An undefined task"+newline;
+        return(out);
+    }
+    out = "A task with the following properties:"+newline
+        +"command:          "+tasks[t.index].command+newline
+        +"no. of arguments: "+string(size(tasks[t.index].arguments))+newline
+        +"state:            "+tasks[t.index].state+newline;
+    return(out);
 }
 
-proc startNTasks(list commands, list Arguments)
-"USAGE:   startNTasks(commands, Arguments); commands list, Arguments list
+proc startTasks(list #)
+"USAGE:   startTasks(commands, Arguments); commands list, Arguments list
 RETURN:   a list L of two links. L[2] gives access to a supervisor link
           (*not* in the sense of scheduling) which usually remains
           unused, but shouldn't be closed or killed before enough
@@ -106,19 +93,47 @@ RETURN:   a list L of two links. L[2] gives access to a supervisor link
 SEE ALSO: startTask, stopTask, waitTask, pollTask, parallel_lib, Ssi links,
           MP links
 KEYWORDS: Parallelization; Links
-EXAMPLE:  example startNTasks; shows an example"
+EXAMPLE:  example startTasks; shows an example"
 {
-    /* check for errors */
-    // TODO
-
+    int nargs = size(#);
+    if (nargs == 0) {
+        ERROR("missing argument");
+    }
+    int i;
+    for (i = nargs; i > 0; i--) {
+        if (typeof(#[i]) != "task") {
+            ERROR("argument not of type 'task' (argument no. "+string(i)+")");
+        }
+        if (#[i].index == 0) {
+            ERROR("cannot start an undefined task (task no. "+string(i)+")");
+        }
+        if (typeof(tasks[#[i].index]) != "internal_task") {
+            ERROR("cannot start an undefined task (task no. "+string(i)+")");
+        }
+        if (tasks[#[i].index].state != "created"
+            && tasks[#[i].index].state != "stopped") {
+            ERROR("cannot start a task whose state is not"+newline
+                +"'created' or 'stopped'");
+        }
+    }
+    for (i = nargs; i > 0; i--) {
+        tasks[#[i].index].id = i;
+        tasks[#[i].index].state = "started";
+    }
     int pid = system("pid");
     link l(pid) = "ssi:fork";
     open(l(pid));
-    write(l(pid), quote(startNTasks_child(commands, Arguments, pid)));
-    int p = read(l(pid));
-    link L(pid) = "ssi:connect localhost:"+string(p);
+    write(l(pid), quote(startTasks_child(#, pid)));
+    int port = read(l(pid));
+    link L(pid) = "ssi:connect localhost:"+string(port);
     open(L(pid));
-    return(list(L(pid), l(pid)));
+    for (i = nargs; i > 0; i--) {
+        tasks[#[i].index].id = i;
+        tasks[#[i].index].state = "started";
+    }
+    for (i = nargs; i > 0; i--) {
+        tasks[#[i].index].links = list(L(pid), l(pid));
+    }
 }
 example
 {
@@ -126,141 +141,256 @@ example
     echo = 2;
     ring r = 0, (x,y), dp;
     ideal i = x, x+y;
-    list L = startNTasks(list("std", "slimgb"), list(list(i), list(i)));
+    list L = startTasks(list("std", "slimgb"), list(list(i), list(i)));
     read(L[1]);
     read(L[1]);
     read(L[1]);
     read(L[1]);
 }
 
-/* This procedure has to be started within the child after forking. */
-static proc startNTasks_child(list commands, list Arguments, int pid_parent)
+/* This procedure is started within the child after forking. */
+static proc startTasks_child(list localtasks, int pid_parent)
 {
-    int p = system("reserve", 1);
-    write(l(pid_parent), p);
+    int port = system("reserve", 1);
+    write(l(pid_parent), port);
     link L(pid_parent) = system("reservedLink");
     export(L(pid_parent));
 
-    int sem = semaphore(1);
-
-    int ncommands = size(commands);
+    int sem_write = semaphore(1);
     int pid = system("pid");
+
+    int nlocaltasks = size(localtasks);
+    intvec state = 0:nlocaltasks;
+    int nwaiting = nlocaltasks;
+    int nfinished;
+    intvec queue = 0, 1..nlocaltasks, 0;   // zeroes for easier handling
+
     list links;
-    links[ncommands+1] = l(pid_parent);
+    links[nlocaltasks+1] = l(pid_parent);
+    intvec assignment = 0:nlocaltasks;
     int nlinks;
-    int nsubmitted;
-    int do_close;
+
     int wait;
+    int id;
+    int code;
+    int waited_for;
     int tmp;
-    while (nsubmitted < ncommands && !do_close) {
+
+    while (nwaiting > 0) {
         wait = 0;
         if (nlinks == 0) {
+            wait = -2;
+        }
+        while (wait == 0) {
+            wait = waitfirst(links, 1000);
+            if (wait == 0) {
+                if (system("semaphore", "try_acquire", 1) == 1) {
+                    wait = -2;
+                }
+            }
+        }
+        if (wait == -2) {   // open a new link
             nlinks++;
             link ll(pid)(nlinks) = "ssi:fork";
             open(ll(pid)(nlinks));
             links[nlinks] = ll(pid)(nlinks);
-            wait = nlinks;
+            write(links[nlinks],
+                quote(startTasks_grandchild(eval(localtasks[queue[2]].index),
+                eval(pid_parent), eval(pid), eval(nlinks), eval(sem_write))));
+            assignment[queue[2]] = nlinks;
+            state[queue[2]] = 1;
+            nwaiting--;
+            queue = 0, queue[3..size(queue)];
         }
-        while (wait == 0) {
-            wait = waitfirst(links, 1000);
-            if (wait > 0 && wait <= ncommands) {
-                tmp = read(links[wait]);
-            }
-            if (wait == 0) {
-                if (system("semaphore", "try_acquire", 1) == 1) {
-                    nlinks++;
-                    link ll(pid)(nlinks) = "ssi:fork";
-                    open(ll(pid)(nlinks));
-                    links[nlinks] = ll(pid)(nlinks);
-                    wait = nlinks;
+        if (wait > 0 && wait <= nlocaltasks) {
+            id = read(links[wait]);
+            code = read(links[wait]);
+            if (code == 1) {   // result computed
+                state[id] = 2;
+                if (id == waited_for) {
+                    write(links[wait], 1);
+                    waited_for = 0;
                 }
             }
-            if (wait == ncommands+1) {
-                tmp = read(l(pid_parent));
-                do_close = 1;
-                break;
+            if (code == 2) {   // result sent
+                read(links[wait]);
+                write(links[wait],
+                    quote(startTasks_grandchild(
+                    eval(localtasks[queue[2]].index), eval(pid_parent),
+                    eval(pid), eval(wait), eval(sem_write))));
+                assignment[queue[2]] = wait;
+                assignment[id] = 0;
+                state[queue[2]] = 1;
+                state[id] = 3;
+                nwaiting--;
+                nfinished++;
+                queue = 0, queue[3..size(queue)];
             }
         }
-        if (!do_close) {
-            nsubmitted++;
-            write(links[wait],
-                quote(startNTasks_grandchild(commands[eval(nsubmitted)],
-                Arguments[eval(nsubmitted)], eval(nsubmitted), eval(sem),
-                eval(pid_parent))));
+        if (wait == nlocaltasks+1) {
+            id = read(l(pid_parent));
+            code = read(l(pid_parent));
+            if (code == 0) {   // stop
+                if (state[id] == 0) {   // waiting
+                    queue = removeFromQueue(queue, id);
+                }
+                if (state[id] == 1 || state[id] == 2) {  // started or computed
+                    close(links[assignment[id]]);
+                    open(links[assignment[id]]);
+                    write(links[assignment[id]],
+                        quote(startTasks_grandchild(
+                        eval(localtasks[queue[2]].index), eval(pid_parent),
+                        eval(pid), eval(assignment[id]), eval(sem_write))));
+                    assignment[queue[2]] = assignment[id];
+                    assignment[id] = 0;
+                    state[queue[2]] = 1;
+                    queue = 0, queue[3..size(queue)];
+                }
+                // state[id] == -1 (stopped) or state[id] == 3 (sent)
+                // should not happen
+                nwaiting--;
+                nfinished++;
+                write(l(pid_parent), state[id]);
+                state[id] = -1;
+            }
+            if (code == 1) {   // wait
+                // TODO: prevent deadlock
+                if (state[id] == 0 || state[id] == 1) {   // waiting or started
+                    waited_for == id;
+                }
+                if (state[id] == 2) {   // computed
+                    write(links[assignment[id]], 1);
+                }
+                write(l(pid_parent), state[id]);
+            }
+            if (code == 2) {   // poll
+                if (state[id] == 2) {   // computed
+                    write(links[assignment[id]], 1);
+                }
+                write(l(pid_parent), state[id]);
+            }
         }
     }
-    while (!do_close) {
+    while (nfinished < nlocaltasks) {
         wait = waitfirst(links);
-        tmp = read(links[wait]);
-        if (wait <= ncommands) {
-            close(links[wait]);
-            if (nlinks > 1) {
-                tmp = system("semaphore", "release", 1);
+        if (wait <= nlocaltasks) {
+            id = read(links[wait]);
+            code = read(links[wait]);
+            if (code == 1) {   // result computed
+                state[id] = 2;
+                if (id == waited_for) {
+                    write(links[wait], 1);
+                    waited_for = 0;
+                }
             }
-            links[wait] = def(0);
-            nlinks--;
+            if (code == 2) {   // result sent
+                read(links[wait]);
+                close(links[wait]);
+                if (nlinks > 1) {
+                    tmp = system("semaphore", "release", 1);
+                }
+                links[wait] = def(0);
+                nlinks--;
+                assignment[id] = 0;
+                state[id] = 3;
+                nfinished++;
+            }
         }
-        if (wait == ncommands+1) {
-            do_close = 1;
+        if (wait == nlocaltasks+1) {
+            id = read(l(pid_parent));
+            code = read(l(pid_parent));
+            if (code == 0) {   // stop
+                if (state[id] == 1 || state[id] == 2) {  // started or computed
+                    close(links[assignment[id]]);
+                    if (nlinks > 1) {
+                        tmp = system("semaphore", "release", 1);
+                    }
+                    links[assignment[id]] = def(0);
+                    nlinks--;
+                    assignment[id] = 0;
+                    nfinished++;
+                }
+                // else: nothing to do
+                write(l(pid_parent), state[id]);
+                state[id] = -1;
+            }
+            if (code == 1) {   // wait
+                if (state[id] == 1) {   // started
+                    waited_for = id;
+                }
+                if (state[id] == 2) {   // computed
+                    write(links[assignment[id]], 1);
+                }
+                write(l(pid_parent), state[id]);
+            }
+            if (code == 2) {   // poll
+                if (state[id] == 2) {   // computed
+                    write(links[assignment[id]], 1);
+                }
+                write(l(pid_parent), state[id]);
+            }
         }
     }
-    while (nlinks > 0) {
-        wait = waitfirst(links, 0);
-        if (wait > 0) {
-            tmp = read(links[wait]);
-        }
-        if (wait == 0) {
-            wait = 1;
-            while(typeof(links[wait]) != "link") {
-                wait++;
-            }
-        }
-        if (wait <= ncommands) {
-            close(links[wait]);
-            if (nlinks > 1) {
-                tmp = system("semaphore", "release", 1);
-            }
-            links[wait] = def(0);
-            nlinks--;
-        }
-    }
-    write(l(pid_parent), 1);
+    exit;
 }
 
 /* This procedure has to be started within the grandchildren after forking. */
-static proc startNTasks_grandchild(string command, list arguments, int i,
-    int sem, int pid_grandparent)
+static proc startTasks_grandchild(int index, int pid_grandparent,
+    int pid_parent, int link_no, int sem_write)
 {
     def result;
     int tmp = system("semaphore", "acquire", 2);
     tmp = system("semaphore", "acquire", 0);
     tmp = system("semaphore", "release", 2);
-    execute("result = "+command+"("+argsToString("arguments", size(arguments))
+    execute("result = "+tasks[index].command+"("
+        +argsToString("tasks[index].arguments", size(tasks[index].arguments))
         +");");
     tmp = system("semaphore", "release", 0);
-    tmp = system("semaphore", "acquire", sem);
-    write(L(pid_grandparent), i);
+    write(ll(pid_parent)(link_no), tasks[index].id);
+    write(ll(pid_parent)(link_no), 1);
+    tmp = read(ll(pid_parent)(link_no));
+    tmp = system("semaphore", "acquire", sem_write);
+    write(L(pid_grandparent), index);
     write(L(pid_grandparent), result);
-    tmp = system("semaphore", "release", sem);
-    return(i);
+    tmp = system("semaphore", "release", sem_write);
+    write(ll(pid_parent)(link_no), tasks[index].id);
+    write(ll(pid_parent)(link_no), 2);
 }
 
-proc stopTask(link l)
+static proc removeFromQueue(intvec queue, int id)
+{
+    int size_queue = size(queue);
+    int i;
+    for (i = size_queue-1; i > 1; i--) {
+        if (queue[i] == id) {
+            return(queue[1..(i-1)], queue[(i+1)..size_queue]);
+        }
+    }
+    return(queue);
+}
+
+proc stopTask(task t)
 "USAGE:   stopTask(l); l link
 RETURN:   none. Stops the task as soon as possible.
 SEE ALSO: startTask, waitTask, pollTask, parallel_lib
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example stopTask; shows an example"
 {
-    int not_ready;
-    if (!status(l, "read", "ready")) {
-        not_ready = 1;
+    if (t.index == 0) {
+        ERROR("cannot stop an undefined task");
     }
-    close(l);
-    if (not_ready) {
-        // At the following line, race conditions might occur.
-        int tmp = system("semaphore", "release", 0);
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot stop an undefined task");
     }
+    if (tasks[t.index].state != "started") {
+        ERROR("cannot stop a task whose state is not 'started'");
+    }
+    write(tasks[t.index].links[2], tasks[t.index].id);
+    write(tasks[t.index].links[2], 0);
+    int state = read(tasks[t.index].links[2]);
+    tasks[t.index].id = 0;
+    tasks[t.index].links = list();
+    tasks[t.index].state = "stopped";
 }
 example
 {
@@ -273,27 +403,43 @@ example
     stopTask(l);
 }
 
-proc waitTask(link l)
+proc waitTask(task t)
 "USAGE:   waitTask(l); l link
 RETURN:   the result of the task. This command is eventually blocking.
 SEE ALSO: startTask, stopTask, pollTask, parallel_lib
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example waitTask; shows an example"
 {
-    int not_ready;
-    int tmp;
-    if (!status(l, "read", "ready")) {
-        tmp = system("semaphore", "release", 0);
-        not_ready = 1;
+    if (t.index == 0) {
+        ERROR("cannot wait for an undefined task");
     }
-    read(l);
-    if (not_ready) {
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot wait for an undefined task");
+    }
+    if (tasks[t.index].state != "started"
+        && tasks[t.index].state != "completed") {
+        ERROR("cannot wait for a task whose state is not"+newline
+            +"'started' or 'completed'");
+    }
+    if (tasks[t.index].state == "completed") {
+        return();
+    }
+    // tasks[t.index].state == "started"
+    write(tasks[t.index].links[2], tasks[t.index].id);
+    write(tasks[t.index].links[2], 1);
+    int state = read(tasks[t.index].links[2]);
+    if (state == 0 || state == 1) {   // waiting or started
+        int tmp = system("semaphore", "release", 0);
+        tmp = waitfirst(tasks[t.index].links);
         tmp = system("semaphore", "acquire", 0);
     }
-    write(l, quote(result));
-    def result = read(l);
-    close(l);
-    return(result);
+    // else (and now in any case): state == 2 (computed).
+    // state == -1 (stopped) of state == 3 (sent) should not happen
+    int index = read(tasks[t.index].links[1]);
+    tasks[t.index].result = read(tasks[t.index].links[1]);
+    tasks[t.index].id = 0;
+    tasks[t.index].links = list();
+    tasks[t.index].state = "completed";
 }
 example
 {
@@ -305,7 +451,7 @@ example
     waitTask(l);
 }
 
-proc pollTask(link l)
+proc pollTask(task t)
 "USAGE:   pollTask(l); l link
 RETURN:   a list result. result[1] is 1 if the task is finished and 0
           otherwise. If the task is finished, then result[2] is the
@@ -314,15 +460,36 @@ SEE ALSO: startTask, stopTask, waitTask, parallel_lib
 KEYWORDS: Parallelization; Links
 EXAMPLE:  example pollTask; shows an example"
 {
-    list result;
-    if (status(l, "read", "ready")) {
-        result[1] = 1;
-        result[2] = waitTask(l);
+    if (t.index == 0) {
+        ERROR("cannot poll an undefined task");
     }
-    else {
-        result[1] = 0;
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot poll an undefined task");
     }
-    return(result);
+    if (tasks[t.index].state != "started"
+        && tasks[t.index].state != "completed") {
+        ERROR("cannot poll a task whose state is not"+newline
+            +"'started' or 'completed'");
+    }
+    if (tasks[t.index].state == "completed") {
+        return(1);
+    }
+    // tasks[t.index].state == "started"
+    write(tasks[t.index].links[2], tasks[t.index].id);
+    write(tasks[t.index].links[2], 2);
+    int state = read(tasks[t.index].links[2]);
+    if (state == 0 || state == 1) {   // waiting or started
+        return(0);
+    }
+    if (state == 2) {   // computed
+        int index = read(tasks[t.index].links[1]);
+        tasks[t.index].result = read(tasks[t.index].links[1]);
+        tasks[t.index].id = 0;
+        tasks[t.index].links = list();
+        tasks[t.index].state = "completed";
+        return(1);
+    }
+    // state == -1 (stopped) or state == 3 (sent) should not happen
 }
 example
 {
@@ -343,18 +510,29 @@ example
     pollTask(l2);
 }
 
-/ * construct the string "name[1], name[2], name[3], ..., name[length]" */
-proc argsToString(string name, int length)
+proc getResult(task t)
 {
-    string arglist;
-    if (length > 0) {
-        arglist = name+"[1]";
+    if (t.index == 0) {
+        ERROR("cannot get result of an undefined task");
     }
-    int i;
-    for (i = 2; i <= length; i++) {
-        arglist = arglist+", "+name+"["+string(i)+"]";
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot get result of an undefined task");
     }
-    return(arglist);
+    if (tasks[t.index].state != "completed") {
+        ERROR("cannot get result of a task which is not completed");
+    }
+    return(tasks[t.index].result);
+}
+
+proc getState(task t)
+{
+    if (t.index == 0) {
+        return("undefined");
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        return("undefined");
+    }
+    return(tasks[t.index].state);
 }
 
 proc semaphore(int n)
@@ -367,4 +545,18 @@ proc semaphore(int n)
         ERROR("no more semphores");
     }
     return(i);
+}
+
+/ * construct the string "name[1], name[2], name[3], ..., name[length]" */
+static proc argsToString(string name, int length)
+{
+    string output;
+    if (length > 0) {
+        output = name+"[1]";
+    }
+    int i;
+    for (i = 2; i <= length; i++) {
+        output = output+", "+name+"["+string(i)+"]";
+    }
+    return(output);
 }
