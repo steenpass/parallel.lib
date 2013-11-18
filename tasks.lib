@@ -282,7 +282,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 1) {   // wait
                 // TODO: prevent deadlock
                 if (state[id] == 0 || state[id] == 1) {   // waiting or started
-                    waited_for == id;
+                    waited_for = id;
                 }
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
