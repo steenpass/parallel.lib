@@ -18,7 +18,7 @@ tasks rely upon and interact with each other). A few of them are already
 implemented. Future plans include an abstraction layer for modular
 techniques (see @ref{modular_lib}), 'worker farms', and parallel tests.
 
-SEE ALSO:  link, semaphore_lib, modular_lib, modstd_lib, assprimeszerodim_lib
+SEE ALSO:  link, tasks_lib, modular_lib, modstd_lib, assprimeszerodim_lib
 
 KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
            Skeletons for parallelization; Distributed computing
@@ -32,7 +32,7 @@ PROCEDURES:
                          wait for all of them to finish
 ";
 
-LIB "semaphore.lib";
+LIB "tasks.lib";
 
 proc parallelWaitN(list commands, list args, int N, list #)
 "USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
@@ -60,7 +60,7 @@ NOTE:       The entries of the list commands must be strings.
          @* MP links do not work with a 64 bit version of Singular. If you want
             to use MP links, make sure that MP is available. This can be
             checked by the Singular command @code{system(\"with\", \"MP\");}.
-SEE ALSO: Ssi links, MP links, waitfirst, waitall, semaphore_lib
+SEE ALSO: Ssi links, MP links, waitfirst, waitall, tasks_lib
 KEYWORDS: parallelWaitN; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
 EXAMPLE:  @code{example parallelWaitN;} shows an example."

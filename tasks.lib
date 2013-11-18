@@ -2,7 +2,7 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   semaphore.lib  An interface for tasks using semaphores
+LIBRARY:   tasks.lib  An interface for tasks using semaphores
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
 SEE ALSO:  link, parallel_lib, resources_lib
