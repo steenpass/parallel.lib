@@ -179,28 +179,47 @@ static proc startTasks_child(list localtasks, int pid_parent)
     while (nwaiting > 0) {
         wait = 0;
         if (nlinks == 0) {
-            wait = -2;
-        }
-        while (wait == 0) {
-            wait = waitfirst(links, 1000);
-            if (wait == 0) {
+            wait = -1;
+            while (-wait < nwaiting) {
                 if (system("semaphore", "try_acquire", 1) == 1) {
-                    wait = -2;
+                    wait--;
+                }
+                else {
+                    break;
                 }
             }
         }
-        if (wait == -2) {   // open a new link
-            nlinks++;
-            link ll(pid)(nlinks) = "ssi:fork";
-            open(ll(pid)(nlinks));
-            links[nlinks] = ll(pid)(nlinks);
-            write(links[nlinks],
-                quote(startTasks_grandchild(eval(localtasks[queue[2]].index),
-                eval(pid_parent), eval(pid), eval(nlinks), eval(sem_write))));
-            assignment[queue[2]] = nlinks;
-            state[queue[2]] = 1;
-            nwaiting--;
-            queue = 0, queue[3..size(queue)];
+        while (wait == 0) {
+            wait = waitfirst(links, 1000);
+            // wait == -1 (all links crashed) should not happen
+            if (wait == 0) {
+                while (-wait < nwaiting) {
+                    if (system("semaphore", "try_acquire", 1) == 1) {
+                        wait--;
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+        }
+        if (wait < 0) {   // open (-wait) new links
+            while (wait < 0) {
+                wait++;
+                nlinks++;
+                link ll(pid)(nlinks) = "ssi:fork";
+                open(ll(pid)(nlinks));
+                links[nlinks] = ll(pid)(nlinks);
+                write(links[nlinks],
+                    quote(startTasks_grandchild(
+                    eval(localtasks[queue[2]].index), eval(pid_parent),
+                    eval(pid), eval(nlinks), eval(sem_write))));
+                assignment[queue[2]] = nlinks;
+                state[queue[2]] = 1;
+                nwaiting--;
+                queue = 0, queue[3..size(queue)];
+            }
+            // wait == 0
         }
         if (wait > 0 && wait <= nlocaltasks) {
             id = read(links[wait]);
