@@ -252,8 +252,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
             // wait == 0
         }
         if (wait > 0 && wait <= nlocaltasks) {
-            id = read(links[wait]);
             code = read(links[wait]);
+            id = read(links[wait]);
             if (code == 1) {   // result computed
                 state[id] = 2;
                 if (ndemanded > 0 && isElement(demanded_tasks, id)) {
@@ -278,8 +278,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
         }
         if (wait == nlocaltasks+1) {
-            id = read(l(pid_parent));
             code = read(l(pid_parent));
+            id = read(l(pid_parent));
             if (code == 0) {   // stop
                 if (state[id] == 0) {   // waiting
                     queue = removeFromIntvec(queue, id);
@@ -341,8 +341,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
     while (nfinished < nlocaltasks) {
         wait = waitfirst(links);
         if (wait <= nlocaltasks) {
-            id = read(links[wait]);
             code = read(links[wait]);
+            id = read(links[wait]);
             if (code == 1) {   // result computed
                 state[id] = 2;
                 if (ndemanded > 0 && isElement(demanded_tasks, id)) {
@@ -365,8 +365,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
         }
         if (wait == nlocaltasks+1) {
-            id = read(l(pid_parent));
             code = read(l(pid_parent));
+            id = read(l(pid_parent));
             if (code == 0) {   // stop
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
@@ -415,15 +415,15 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
         +argsToString("tasks[index].arguments", size(tasks[index].arguments))
         +");");
     tmp = system("semaphore", "release", sem_cores);
-    write(ll(pid_parent)(link_no), tasks[index].id);
     write(ll(pid_parent)(link_no), 1);
+    write(ll(pid_parent)(link_no), tasks[index].id);
     tmp = read(ll(pid_parent)(link_no));
     tmp = system("semaphore", "acquire", sem_write);
     write(L(pid_grandparent), index);
     write(L(pid_grandparent), result);
     tmp = system("semaphore", "release", sem_write);
-    write(ll(pid_parent)(link_no), tasks[index].id);
     write(ll(pid_parent)(link_no), 2);
+    write(ll(pid_parent)(link_no), tasks[index].id);
 }
 
 static proc isElement(intvec v, int n)
@@ -465,8 +465,8 @@ EXAMPLE:  example stopTask; shows an example"
     if (tasks[t.index].state != "started") {
         ERROR("cannot stop a task whose state is not 'started'");
     }
-    write(tasks[t.index].links[2], tasks[t.index].id);
     write(tasks[t.index].links[2], 0);
+    write(tasks[t.index].links[2], tasks[t.index].id);
     int state = read(tasks[t.index].links[2]);
     tasks[t.index].id = 0;
     tasks[t.index].links = list();
@@ -505,8 +505,8 @@ EXAMPLE:  example waitTask; shows an example"
         return();
     }
     // tasks[t.index].state == "started"
-    write(tasks[t.index].links[2], tasks[t.index].id);
     write(tasks[t.index].links[2], 1);
+    write(tasks[t.index].links[2], tasks[t.index].id);
     int state = read(tasks[t.index].links[2]);
     if (state == 0 || state == 1) {   // waiting or started
         int tmp = system("semaphore", "release", sem_cores);
@@ -555,8 +555,8 @@ EXAMPLE:  example pollTask; shows an example"
         return(1);
     }
     // tasks[t.index].state == "started"
-    write(tasks[t.index].links[2], tasks[t.index].id);
     write(tasks[t.index].links[2], 2);
+    write(tasks[t.index].links[2], tasks[t.index].id);
     int state = read(tasks[t.index].links[2]);
     if (state == 0 || state == 1) {   // waiting or started
         return(0);
