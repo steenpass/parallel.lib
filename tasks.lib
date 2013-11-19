@@ -201,11 +201,12 @@ static proc startTasks_child(list localtasks, int pid_parent)
 
     int code;
     int id;
-    intvec demanded_tasks;
+    intvec demanded_tasks = 0, 0;   // zeroes for easier handling
     int ndemanded;
 
     int wait;
     int tmp;
+    int i;
 
     while (nwaiting > 0) {
         wait = 0;
@@ -306,32 +307,29 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 state[id] = -1;
             }
             if (code == 1) {   // wait
-                id = read(l(pid_parent))[1];
-                if (state[id] == 0) {   // waiting
-                    granted_leaves++;
-                    nlinks++;
-                    link ll(pid)(nlinks) = "ssi:fork";
-                    open(ll(pid)(nlinks));
-                    links[nlinks] = ll(pid)(nlinks);
-                    write(links[nlinks],
-                        quote(startTasks_grandchild(
-                        eval(localtasks[id].index), eval(pid_parent),
-                        eval(pid), eval(nlinks), eval(sem_write))));
-                    assignment[id] = nlinks;
-                    state[id] = 1;
-                    nwaiting--;
-                    queue = removeFromIntvec(queue, id);
-                    demanded_tasks = 0, id, 0;
-                    ndemanded = 1;
+                demanded_tasks = read(l(pid_parent));
+                ndemanded = read(l(pid_parent));
+                for (i = size(demanded_tasks)-1; i > 1; i--) {
+                    id = demanded_tasks[i];
+                    if (state[id] == 0) {   // waiting
+                        granted_leaves++;
+                        nlinks++;
+                        link ll(pid)(nlinks) = "ssi:fork";
+                        open(ll(pid)(nlinks));
+                        links[nlinks] = ll(pid)(nlinks);
+                        write(links[nlinks],
+                            quote(startTasks_grandchild(
+                            eval(localtasks[id].index), eval(pid_parent),
+                            eval(pid), eval(nlinks), eval(sem_write))));
+                        assignment[id] = nlinks;
+                        state[id] = 1;
+                        nwaiting--;
+                        queue = removeFromIntvec(queue, id);
+                    }
+                    if (state[id] == 2) {   // computed
+                        write(links[assignment[id]], 1);
+                    }
                 }
-                if (state[id] == 1) {   // started
-                    demanded_tasks = 0, id, 0;
-                    ndemanded = 1;
-                }
-                if (state[id] == 2) {   // computed
-                    write(links[assignment[id]], 1);
-                }
-                write(l(pid_parent), state[id]);
             }
             if (code == 2) {   // poll
                 id = read(l(pid_parent));
@@ -387,15 +385,14 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 state[id] = -1;
             }
             if (code == 1) {   // wait
-                id = read(l(pid_parent))[1];
-                if (state[id] == 1) {   // started
-                    demanded_tasks = 0, id, 0;
-                    ndemanded = 1;
+                demanded_tasks = read(l(pid_parent));
+                ndemanded = read(l(pid_parent));
+                for (i = size(demanded_tasks)-1; i > 1; i--) {
+                    id = demanded_tasks[i];
+                    if (state[id] == 2) {   // computed
+                        write(links[assignment[id]], 1);
+                    }
                 }
-                if (state[id] == 2) {   // computed
-                    write(links[assignment[id]], 1);
-                }
-                write(l(pid_parent), state[id]);
             }
             if (code == 2) {   // poll
                 id = read(l(pid_parent));
@@ -513,8 +510,9 @@ EXAMPLE:  example waitTask; shows an example"
     }
     // tasks[t.index].state == "started"
     write(tasks[t.index].links[2], 1);
-    write(tasks[t.index].links[2], intvec(tasks[t.index].id));
-    int state = read(tasks[t.index].links[2]);
+    write(tasks[t.index].links[2], intvec(0, tasks[t.index].id, 0));
+    write(tasks[t.index].links[2], 1);
+    int state = 0;
     if (state == 0 || state == 1) {   // waiting or started
         int tmp = system("semaphore", "release", sem_cores);
         tmp = waitfirst(tasks[t.index].links);
