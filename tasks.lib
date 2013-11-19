@@ -279,8 +279,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
-            id = read(l(pid_parent));
             if (code == 0) {   // stop
+                id = read(l(pid_parent));
                 if (state[id] == 0) {   // waiting
                     queue = removeFromIntvec(queue, id);
                 }
@@ -304,6 +304,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 state[id] = -1;
             }
             if (code == 1) {   // wait
+                id = read(l(pid_parent))[1];
                 if (state[id] == 0) {   // waiting
                     granted_leaves++;
                     nlinks++;
@@ -331,6 +332,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 write(l(pid_parent), state[id]);
             }
             if (code == 2) {   // poll
+                id = read(l(pid_parent));
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
                 }
@@ -366,8 +368,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
-            id = read(l(pid_parent));
             if (code == 0) {   // stop
+                id = read(l(pid_parent));
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
                     if (nlinks > granted_leaves) {
@@ -383,6 +385,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 state[id] = -1;
             }
             if (code == 1) {   // wait
+                id = read(l(pid_parent))[1];
                 if (state[id] == 1) {   // started
                     demanded_tasks = 0, id, 0;
                     ndemanded = 1;
@@ -393,6 +396,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 write(l(pid_parent), state[id]);
             }
             if (code == 2) {   // poll
+                id = read(l(pid_parent));
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
                 }
@@ -506,7 +510,7 @@ EXAMPLE:  example waitTask; shows an example"
     }
     // tasks[t.index].state == "started"
     write(tasks[t.index].links[2], 1);
-    write(tasks[t.index].links[2], tasks[t.index].id);
+    write(tasks[t.index].links[2], intvec(tasks[t.index].id));
     int state = read(tasks[t.index].links[2]);
     if (state == 0 || state == 1) {   // waiting or started
         int tmp = system("semaphore", "release", sem_cores);
