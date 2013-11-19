@@ -197,10 +197,12 @@ static proc startTasks_child(list localtasks, int pid_parent)
 
     int granted_leaves;
 
-    int wait;
-    int id;
     int code;
-    int waited_for;
+    int id;
+    intvec demanded_tasks;
+    int ndemanded;
+
+    int wait;
     int tmp;
 
     while (nwaiting > 0) {
@@ -254,9 +256,10 @@ static proc startTasks_child(list localtasks, int pid_parent)
             code = read(links[wait]);
             if (code == 1) {   // result computed
                 state[id] = 2;
-                if (id == waited_for) {
+                if (ndemanded > 0 && isElement(demanded_tasks, id)) {
                     write(links[wait], 1);
-                    waited_for = 0;
+                    demanded_tasks = removeFromIntvec(demanded_tasks, id);
+                    ndemanded--;
                 }
             }
             if (code == 2) {   // result sent
@@ -279,7 +282,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             code = read(l(pid_parent));
             if (code == 0) {   // stop
                 if (state[id] == 0) {   // waiting
-                    queue = removeFromQueue(queue, id);
+                    queue = removeFromIntvec(queue, id);
                 }
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
@@ -314,11 +317,13 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     assignment[id] = nlinks;
                     state[id] = 1;
                     nwaiting--;
-                    queue = removeFromQueue(queue, id);
-                    waited_for == id;
+                    queue = removeFromIntvec(queue, id);
+                    demanded_tasks = 0, id, 0;
+                    ndemanded = 1;
                 }
                 if (state[id] == 1) {   // started
-                    waited_for = id;
+                    demanded_tasks = 0, id, 0;
+                    ndemanded = 1;
                 }
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
@@ -340,9 +345,10 @@ static proc startTasks_child(list localtasks, int pid_parent)
             code = read(links[wait]);
             if (code == 1) {   // result computed
                 state[id] = 2;
-                if (id == waited_for) {
+                if (ndemanded > 0 && isElement(demanded_tasks, id)) {
                     write(links[wait], 1);
-                    waited_for = 0;
+                    demanded_tasks = removeFromIntvec(demanded_tasks, id);
+                    ndemanded--;
                 }
             }
             if (code == 2) {   // result sent
@@ -378,7 +384,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
             if (code == 1) {   // wait
                 if (state[id] == 1) {   // started
-                    waited_for = id;
+                    demanded_tasks = 0, id, 0;
+                    ndemanded = 1;
                 }
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
@@ -419,16 +426,27 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
     write(ll(pid_parent)(link_no), 2);
 }
 
-static proc removeFromQueue(intvec queue, int id)
+static proc isElement(intvec v, int n)
 {
-    int size_queue = size(queue);
     int i;
-    for (i = size_queue-1; i > 1; i--) {
-        if (queue[i] == id) {
-            return(queue[1..(i-1)], queue[(i+1)..size_queue]);
+    for (i = size(v)-1; i > 1; i--) {
+        if (v[i] == n) {
+            return(1);
         }
     }
-    return(queue);
+    return(0);
+}
+
+static proc removeFromIntvec(intvec v, int n)
+{
+    int size_v = size(v);
+    int i;
+    for (i = size_v-1; i > 1; i--) {
+        if (v[i] == n) {
+            return(v[1..(i-1)], v[(i+1)..size_v]);
+        }
+    }
+    return(v);
 }
 
 proc stopTask(task t)
