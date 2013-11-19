@@ -32,13 +32,15 @@ static proc mod_init()
     exportto(Tasks, sem_queue);
     newstruct("task", "int index");
     newstruct("internal_task", "int id, string command, list arguments,"
-        +"def result, string state, list links");
+        +"def result, string state, list links, int linkID");
     system("install", "task", "=", createTask, 1);
     system("install", "task", "print", printTask, 1);
     list tasks;
     exportto(Tasks, tasks);
     int ntasks;
     exportto(Tasks, ntasks);
+    int nlinkIDs;
+    exportto(Tasks, nlinkIDs);
 }
 
 proc createTask(alias string command, alias list arguments)
@@ -152,12 +154,12 @@ EXAMPLE:  example startTasks; shows an example"
     int port = read(l(pid));
     link L(pid) = "ssi:connect localhost:"+string(port);
     open(L(pid));
+    nlinkIDs++;
     for (i = nargs; i > 0; i--) {
         tasks[#[i].index].id = i;
         tasks[#[i].index].state = "started";
-    }
-    for (i = nargs; i > 0; i--) {
         tasks[#[i].index].links = list(L(pid), l(pid));
+        tasks[#[i].index].linkID = nlinkIDs;
     }
 }
 example
@@ -474,6 +476,7 @@ EXAMPLE:  example stopTask; shows an example"
     int state = read(tasks[t.index].links[2]);
     tasks[t.index].id = 0;
     tasks[t.index].links = list();
+    tasks[t.index].linkID = 0;
     tasks[t.index].state = "stopped";
 }
 example
@@ -523,6 +526,7 @@ EXAMPLE:  example waitTask; shows an example"
     tasks[t.index].result = read(tasks[t.index].links[1]);
     tasks[t.index].id = 0;
     tasks[t.index].links = list();
+    tasks[t.index].linkID = 0;
     tasks[t.index].state = "completed";
 }
 example
@@ -570,6 +574,7 @@ EXAMPLE:  example pollTask; shows an example"
         tasks[t.index].result = read(tasks[t.index].links[1]);
         tasks[t.index].id = 0;
         tasks[t.index].links = list();
+        tasks[t.index].linkID = 0;
         tasks[t.index].state = "completed";
         return(1);
     }
