@@ -156,8 +156,6 @@ EXAMPLE:  example startTasks; shows an example"
     open(L(pid));
     nlinkIDs++;
     for (i = nargs; i > 0; i--) {
-        tasks[#[i].index].id = i;
-        tasks[#[i].index].state = "started";
         tasks[#[i].index].links = list(L(pid), l(pid));
         tasks[#[i].index].linkID = nlinkIDs;
     }
