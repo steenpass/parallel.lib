@@ -312,6 +312,9 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 1) {   // wait
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
+                if (demanded_tasks == 0:2 && ndemanded == 0) {
+                    write(l(pid_parent), results_being_sent);
+                }
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
                     if (state[id] == 0) {   // waiting
@@ -394,6 +397,9 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 1) {   // wait
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
+                if (demanded_tasks == 0:2 && ndemanded == 0) {
+                    write(l(pid_parent), results_being_sent);
+                }
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
                     if (state[id] == 2) {   // computed
