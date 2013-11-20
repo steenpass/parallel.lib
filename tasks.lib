@@ -683,6 +683,11 @@ example
     waitTask(l);
 }
 
+proc waitAllTasks(list #)
+{
+    list tmp = waitTasks(#, size(#));
+}
+
 proc pollTask(task t)
 "USAGE:   pollTask(l); l link
 RETURN:   a list result. result[1] is 1 if the task is finished and 0
