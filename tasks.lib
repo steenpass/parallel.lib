@@ -767,6 +767,28 @@ example
     pollTask(l2);
 }
 
+proc getCommand(task t)
+{
+    if (t.index == 0) {
+        ERROR("cannot get command of an undefined task");
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot get command of an undefined task");
+    }
+    return(tasks[t.index].command);
+}
+
+proc getArguments(task t)
+{
+    if (t.index == 0) {
+        ERROR("cannot get arguments of an undefined task");
+    }
+    if (typeof(tasks[t.index]) != "internal_task") {
+        ERROR("cannot get arguments of an undefined task");
+    }
+    return(tasks[t.index].arguments);
+}
+
 proc getResult(task t)
 {
     if (t.index == 0) {
