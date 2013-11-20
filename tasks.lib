@@ -34,6 +34,7 @@ static proc mod_init()
     newstruct("internal_task", "int id, string command, list arguments,"
         +"def result, string state, list links, int linkID");
     system("install", "task", "=", createTask, 1);
+    system("install", "task", "==", compareTasks, 2);
     system("install", "task", "print", printTask, 1);
     list tasks;
     exportto(Tasks, tasks);
@@ -86,6 +87,24 @@ proc copyTask(task t)
     tasks[ntasks] = tasks[t.index];
     t_copy.index = ntasks;
     return(t_copy);
+}
+
+// arguments and result are not compared
+proc compareTasks(task t1, task t2)
+{
+    if (tasks[t1.index].id != tasks[t2.index].id) {
+        return(0);
+    }
+    if (tasks[t1.index].command != tasks[t2.index].command) {
+        return(0);
+    }
+    if (tasks[t1.index].state != tasks[t2.index].state) {
+        return(0);
+    }
+    if (tasks[t1.index].linkID != tasks[t2.index].linkID) {
+        return(0);
+    }
+    return(1);
 }
 
 proc printTask(task t)
