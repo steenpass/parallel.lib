@@ -201,7 +201,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
     int ndemanded;
 
     int granted_leaves;
-    int results_being_sent;
+    int results_sent;
 
     int wait;
     int tmp;
@@ -262,7 +262,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     write(links[wait], 1);
                     demanded_tasks = removeFromIntvec(demanded_tasks, id);
                     ndemanded--;
-                    results_being_sent++;
+                    results_sent++;
                 }
             }
             if (code == 2) {   // result sent
@@ -278,7 +278,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 nwaiting--;
                 nfinished++;
                 queue = 0, queue[3..size(queue)];
-                results_being_sent--;
             }
         }
         if (wait == nlocaltasks+1) {
@@ -311,7 +310,10 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
                 if (demanded_tasks == 0:2 && ndemanded == 0) {
-                    write(l(pid_parent), results_being_sent);
+                    write(l(pid_parent), results_sent);
+                }
+                else {
+                    results_sent = 0;
                 }
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
@@ -332,7 +334,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     }
                     if (state[id] == 2) {   // computed
                         write(links[assignment[id]], 1);
-                        results_being_sent++;
+                        results_sent++;
                     }
                 }
             }
@@ -340,7 +342,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 id = read(l(pid_parent));
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
-                    results_being_sent++;
                 }
                 write(l(pid_parent), state[id]);
             }
@@ -357,7 +358,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     write(links[wait], 1);
                     demanded_tasks = removeFromIntvec(demanded_tasks, id);
                     ndemanded--;
-                    results_being_sent++;
+                    results_sent++;
                 }
             }
             if (code == 2) {   // result sent
@@ -371,7 +372,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 assignment[id] = 0;
                 state[id] = 3;
                 nfinished++;
-                results_being_sent--;
             }
         }
         if (wait == nlocaltasks+1) {
@@ -395,14 +395,20 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 1) {   // wait
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
+                if (ndemanded > size(demanded_tasks)) {
+                    ndemanded = size(demanded_tasks);
+                }
                 if (demanded_tasks == 0:2 && ndemanded == 0) {
-                    write(l(pid_parent), results_being_sent);
+                    write(l(pid_parent), results_sent);
+                }
+                else {
+                    results_sent = 0;
                 }
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
                     if (state[id] == 2) {   // computed
                         write(links[assignment[id]], 1);
-                        results_being_sent++;
+                        results_sent++;
                     }
                 }
             }
@@ -410,7 +416,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 id = read(l(pid_parent));
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
-                    results_being_sent++;
                 }
                 write(l(pid_parent), state[id]);
             }
