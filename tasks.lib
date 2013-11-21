@@ -650,20 +650,23 @@ EXAMPLE:  example waitTask; shows an example"
     int remaining_time;
     int tmp;
     while (ncompleted < N) {
-        if (timeout == 0) {
-            tmp = system("semaphore", "release", sem_cores);
-            wait = waitfirst(links);
-            tmp = system("semaphore", "acquire", sem_cores);
-        }
-        else {
-            remaining_time = timeout-(rtimer-starting_time);
-            if (remaining_time < 0) {
-                break;
+        wait = waitfirst(links, 0);
+        if (wait == 0) {
+            if (timeout == 0) {
+                tmp = system("semaphore", "release", sem_cores);
+                wait = waitfirst(links);
+                tmp = system("semaphore", "acquire", sem_cores);
             }
             else {
-                tmp = system("semaphore", "release", sem_cores);
-                wait = waitfirst(links, remaining_time);
-                tmp = system("semaphore", "acquire", sem_cores);
+                remaining_time = timeout-(rtimer-starting_time);
+                if (remaining_time < 0) {
+                    break;
+                }
+                else {
+                    tmp = system("semaphore", "release", sem_cores);
+                    wait = waitfirst(links, remaining_time);
+                    tmp = system("semaphore", "acquire", sem_cores);
+                }
             }
         }
         if (wait < 1) {
