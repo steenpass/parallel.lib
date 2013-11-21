@@ -274,8 +274,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         if (wait > 0 && wait <= nlocaltasks) {
             code = read(links[wait]);
-            id = read(links[wait]);
             if (code == 1) {   // result computed
+                id = read(links[wait]);
                 state[id] = 2;
                 if (ndemanded > 0 && isElement(demanded_tasks, id)) {
                     write(links[wait], 1);
@@ -284,6 +284,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     results_sent++;
                 }
             }
+            // code == 2: startTasks_grandchild() ended, do nothing
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
@@ -372,7 +373,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
             if (code == 3) {   // got result
                 id = read(l(pid_parent));
-                read(links[assignment[id]]);
                 write(links[assignment[id]],
                     quote(startTasks_grandchild(
                     eval(localtasks[queue[2]].index), eval(pid_parent),
@@ -394,8 +394,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
         wait = waitfirst(links);
         if (wait <= nlocaltasks) {
             code = read(links[wait]);
-            id = read(links[wait]);
             if (code == 1) {   // result computed
+                id = read(links[wait]);
                 state[id] = 2;
                 if (ndemanded > 0 && isElement(demanded_tasks, id)) {
                     write(links[wait], 1);
@@ -404,6 +404,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     results_sent++;
                 }
             }
+            // code == 2: startTasks_grandchild() ended, do nothing
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
@@ -455,7 +456,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
             if (code == 3) {   // got result
                 id = read(l(pid_parent));
-                read(links[assignment[id]]);
                 close(links[assignment[id]]);
                 if (nlinks > granted_leaves) {
                     tmp = system("semaphore", "release", sem_leaves);
@@ -492,6 +492,7 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
     write(L(pid_grandparent), index);
     write(L(pid_grandparent), result);
     tmp = system("semaphore", "release", sem_write);
+    return(2);
 }
 
 static proc isElement(intvec v, int n)
