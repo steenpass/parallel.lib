@@ -283,20 +283,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     results_sent++;
                 }
             }
-            if (code == 2) {   // result sent
-                read(links[wait]);
-                write(links[wait],
-                    quote(startTasks_grandchild(
-                    eval(localtasks[queue[2]].index), eval(pid_parent),
-                    eval(pid), eval(wait), eval(sem_write))));
-                assignment[queue[2]] = wait;
-                assignment[id] = 0;
-                state[queue[2]] = 1;
-                state[id] = 3;
-                nwaiting--;
-                nfinished++;
-                queue = 0, queue[3..size(queue)];
-            }
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
@@ -380,6 +366,21 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 }
                 write(l(pid_parent), state[id]);
             }
+            if (code == 3) {   // got result
+                id = read(l(pid_parent));
+                read(links[assignment[id]]);
+                write(links[assignment[id]],
+                    quote(startTasks_grandchild(
+                    eval(localtasks[queue[2]].index), eval(pid_parent),
+                    eval(pid), eval(assignment[id]), eval(sem_write))));
+                assignment[queue[2]] = assignment[id];
+                assignment[id] = 0;
+                state[queue[2]] = 1;
+                state[id] = 3;
+                nwaiting--;
+                nfinished++;
+                queue = 0, queue[3..size(queue)];
+            }
         }
     }
     while (nfinished < nlocaltasks) {
@@ -395,18 +396,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     ndemanded--;
                     results_sent++;
                 }
-            }
-            if (code == 2) {   // result sent
-                read(links[wait]);
-                close(links[wait]);
-                if (nlinks > granted_leaves) {
-                    tmp = system("semaphore", "release", sem_leaves);
-                }
-                links[wait] = def(0);
-                nlinks--;
-                assignment[id] = 0;
-                state[id] = 3;
-                nfinished++;
             }
         }
         if (wait == nlocaltasks+1) {
@@ -454,6 +443,19 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 }
                 write(l(pid_parent), state[id]);
             }
+            if (code == 3) {   // got result
+                id = read(l(pid_parent));
+                read(links[assignment[id]]);
+                close(links[assignment[id]]);
+                if (nlinks > granted_leaves) {
+                    tmp = system("semaphore", "release", sem_leaves);
+                }
+                links[assignment[id]] = def(0);
+                nlinks--;
+                assignment[id] = 0;
+                state[id] = 3;
+                nfinished++;
+            }
         }
     }
     exit;
@@ -478,8 +480,6 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
     write(L(pid_grandparent), index);
     write(L(pid_grandparent), result);
     tmp = system("semaphore", "release", sem_write);
-    write(ll(pid_parent)(link_no), 2);
-    write(ll(pid_parent)(link_no), tasks[index].id);
 }
 
 static proc isElement(intvec v, int n)
@@ -672,6 +672,8 @@ EXAMPLE:  example waitTask; shows an example"
         }
         index = read(links[wait]);
         tasks[index].result = read(links[wait]);
+        write(tasks[index].links[2], 3);
+        write(tasks[index].links[2], tasks[index].id);
         tasks[index].id = 0;
         tasks[index].links = list();
         tasks[index].linkID = 0;
@@ -700,6 +702,8 @@ EXAMPLE:  example waitTask; shows an example"
         }
         index = read(links[wait]);
         tasks[index].result = read(links[wait]);
+        write(tasks[index].links[2], 3);
+        write(tasks[index].links[2], tasks[index].id);
         tasks[index].id = 0;
         tasks[index].links = list();
         tasks[index].linkID = 0;
@@ -771,6 +775,8 @@ EXAMPLE:  example pollTask; shows an example"
     if (state == 2) {   // computed
         int index = read(tasks[t.index].links[1]);
         tasks[t.index].result = read(tasks[t.index].links[1]);
+        write(tasks[t.index].links[2], 3);
+        write(tasks[t.index].links[2], tasks[t.index].id);
         tasks[t.index].id = 0;
         tasks[t.index].links = list();
         tasks[t.index].linkID = 0;
