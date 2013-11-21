@@ -76,29 +76,8 @@ KEYWORDS: parallelWaitN; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
 EXAMPLE:  @code{example parallelWaitN;} shows an example."
 {
-  // initialize the timer
-  int oldtimerresolution = system("--ticks-per-sec");
-  system("--ticks-per-sec", 1000);
-  int t = rtimer;
-
   // auxiliary variables
   int i;
-
-  // read optional parameters
-  list defaults = list(0, "ssi");
-  for(i = 1; i <= size(defaults); i++)
-  {
-    if(typeof(#[i]) != typeof(defaults[i]))
-    {
-      # = insert(#, defaults[i], i-1);
-    }
-  }
-  if(size(#) != size(defaults))
-  {
-    ERROR("wrong optional parameters");
-  }
-  int timeout = #[1];
-  string linktype = #[2];
 
   // error checking
   int njobs = size(commands);
@@ -122,71 +101,19 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
       ERROR("The second argument is not a list of lists.");
     }
   }
-  if(N < 0)
-  {
-    ERROR("The number of jobs which you want to wait for is negative.");
-  }
-  if(N > njobs)
-  {
-    ERROR("The number of jobs which you want to wait for is greater"
-         +newline+"than the number of jobs itself.");
-  }
-  if(timeout < 0)
-  {
-    ERROR("The given timeout is negative.");
-  }
-  if(linktype != "ssi" && linktype != "mp")
-  {
-    ERROR("The given linktype is not recognized.");
-  }
 
-  // compute tasks
-  list Links = startNTasks(commands, args);
-  list links = list(Links[1]);
-  int nfinished;
-  int tt;
-  int wait;
-  int index;
-  int tmp;
-  list results;
-  results[njobs+1] = 0;   // prevent the list from being copied again and again
-  while(nfinished < N) {
-    if (timeout == 0) {
-        tmp = system("semaphore", "release", sem_cores);
-        wait = waitfirst(links);
-        tmp = system("semaphore", "acquire", sem_cores);
-    }
-    else {
-        tt = timeout-(rtimer-t);
-        if (tt < 0) {
-            break;
-        }
-        else {
-            tmp = system("semaphore", "release", sem_cores);
-            wait = waitfirst(links, tt);
-            tmp = system("semaphore", "acquire", sem_cores);
-        }
-    }
-    if (wait < 1) {
-        break;
-    }
-    index = read(links[1]);
-    results[index] = read(links[1]);
-    nfinished++;
+  // compute the tasks
+  for (i = 1; i <= njobs; i++) {
+    task t(i) = commands[i], args[i];
   }
-  if (wait == -1) {
-    ERROR("All links crashed.");
-  }
-  while (status(links[1], "read", "ready")) {
-    index = read(links[1]);
-    results[index] = read(links[1]);
-  }
-  write(Links[2], 1);
-  tmp = read(Links[2]);
-  results[njobs+1] = def(0);
+  startTasks(t(1..njobs));
+  list indices = waitTasks(list(t(1..njobs)), N, #);
 
   // return results
-  system("--ticks-per-sec", oldtimerresolution);
+  list results;
+  for (i = size(indices); i > 0; i--) {
+    results[indices[i]] = getResult(t(indices[i]));
+  }
   return(results);
 }
 example
@@ -335,8 +262,4 @@ example
   "EXAMPLE:";
   echo = 2;
 }
-
-// TODO
-/* worker farm */
-static proc Create() {}
 
