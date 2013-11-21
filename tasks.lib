@@ -109,20 +109,18 @@ proc compareTasks(task t1, task t2)
 
 proc printTask(task t)
 {
-    string out;
     if (t.index == 0) {
-        out = "An undefined task"+newline;
-        return(out);
+        "An undefined task";
+        return();
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        out = "An undefined task"+newline;
-        return(out);
+        "An undefined task";
+        return();
     }
-    out = "A task with the following properties:"+newline
+    "A task with the following properties:"+newline
         +"command:          "+tasks[t.index].command+newline
         +"no. of arguments: "+string(size(tasks[t.index].arguments))+newline
-        +"state:            "+tasks[t.index].state+newline;
-    return(out);
+        +"state:            "+tasks[t.index].state;
 }
 
 proc startTasks(list #)
