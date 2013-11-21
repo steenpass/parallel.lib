@@ -219,6 +219,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
 
     int granted_leaves;
     int results_sent;
+    int dont_exit;
 
     int wait;
     int deadlock;
@@ -305,9 +306,10 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 }
                 // state[id] == -1 (stopped) or state[id] == 3 (sent)
                 // should not happen
+                write(l(pid_parent), state[id]);
+                dont_exit = 1;
                 nwaiting--;
                 nfinished++;
-                write(l(pid_parent), state[id]);
                 state[id] = -1;
             }
             if (code == 1) {   // wait
@@ -322,6 +324,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 else {
                     results_sent = 0;
                 }
+                dont_exit = 1;
                 deadlock = 0;
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
@@ -365,6 +368,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     write(links[assignment[id]], 1);
                 }
                 write(l(pid_parent), state[id]);
+                dont_exit = 1;
             }
             if (code == 3) {   // got result
                 id = read(l(pid_parent));
@@ -381,9 +385,12 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 nfinished++;
                 queue = 0, queue[3..size(queue)];
             }
+            if (code == 4) {   // may exit
+                dont_exit = 0;
+            }
         }
     }
-    while (nfinished < nlocaltasks) {
+    while (nfinished < nlocaltasks || dont_exit) {
         wait = waitfirst(links);
         if (wait <= nlocaltasks) {
             code = read(links[wait]);
@@ -414,6 +421,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 }
                 // else: nothing to do
                 write(l(pid_parent), state[id]);
+                dont_exit = 1;
                 state[id] = -1;
             }
             if (code == 1) {   // wait
@@ -428,6 +436,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 else {
                     results_sent = 0;
                 }
+                dont_exit = 1;
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
                     if (state[id] == 2) {   // computed
@@ -442,6 +451,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     write(links[assignment[id]], 1);
                 }
                 write(l(pid_parent), state[id]);
+                dont_exit = 1;
             }
             if (code == 3) {   // got result
                 id = read(l(pid_parent));
@@ -455,6 +465,9 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 assignment[id] = 0;
                 state[id] = 3;
                 nfinished++;
+            }
+            if (code == 4) {   // may exit
+                dont_exit = 0;
             }
         }
     }
@@ -536,6 +549,7 @@ EXAMPLE:  example stopTask; shows an example"
     write(tasks[t.index].links[2], 0);
     write(tasks[t.index].links[2], tasks[t.index].id);
     int state = read(tasks[t.index].links[2]);
+    write(tasks[t.index].links[2], 4);
     tasks[t.index].id = 0;
     tasks[t.index].links = list();
     tasks[t.index].linkID = 0;
@@ -694,6 +708,7 @@ EXAMPLE:  example waitTask; shows an example"
     int results_sent;
     for (j = size(requests); j > 0; j--) {
         results_sent = results_sent + read(requests[j][3]);
+        write(requests[j][3], 4);
     }
     while (results_sent > results_got) {
         wait = waitfirst(links);
@@ -769,6 +784,7 @@ EXAMPLE:  example pollTask; shows an example"
     write(tasks[t.index].links[2], 2);
     write(tasks[t.index].links[2], tasks[t.index].id);
     int state = read(tasks[t.index].links[2]);
+    write(tasks[t.index].links[2], 4);
     if (state == 0 || state == 1) {   // waiting or started
         return(0);
     }
