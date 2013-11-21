@@ -471,7 +471,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
         }
     }
-    exit;
 }
 
 /* This procedure has to be started within the grandchildren after forking. */
