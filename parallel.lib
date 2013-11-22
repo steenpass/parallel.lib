@@ -108,6 +108,9 @@ EXAMPLE:  @code{example parallelWaitN;} shows an example."
     for (i = size(indices); i > 0; i--) {
         results[indices[i]] = getResult(t(indices[i]));
     }
+    for (i = 1; i <= njobs; i++) {
+        killTask(t(i));
+    }
     return(results);
 }
 example
