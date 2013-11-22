@@ -32,17 +32,7 @@ PROCEDURES:
                          wait for all of them to finish
 ";
 
-LIB "resources.lib";
 LIB "tasks.lib";
-
-static proc mod_init()
-{
-    if (!defined(Resources)) {
-        LIB "resources.lib";
-    }
-    int sem_cores = Resources::sem_cores;
-    exportto(Parallel, sem_cores);
-}
 
 proc parallelWaitN(list commands, list args, int N, list #)
 "USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
