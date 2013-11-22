@@ -34,7 +34,7 @@ PROCEDURES:
 
 LIB "tasks.lib";
 
-proc parallelWaitN(list commands, list args, int N, list #)
+proc parallelWaitN(alias list commands, alias list args, int N, list #)
 "USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
          args list, N int, timeout int, linktype string
 RETURN:  a list, containing the results of commands[i] applied to arg[i],
@@ -117,7 +117,7 @@ example
     parallelWaitN(commands, args, 3);
 }
 
-proc parallelWaitFirst(list commands, list args, list #)
+proc parallelWaitFirst(alias list commands, alias list args, list #)
 "USAGE:  parallelWaitFirst(commands, args[, timeout, linktype]); commands list,
          args list, timeout int, linktype string
 RETURN:  a list, containing at least one (if no timeout occurs) of the results
@@ -147,7 +147,7 @@ example
     parallelWaitFirst(commands, args);
 }
 
-proc parallelWaitAll(def commands, list args, list #)
+proc parallelWaitAll(def commands, alias list args, list #)
 "USAGE:  parallelWaitAll(commands, args[, timeout, linktype]); commands list or
          string, args list, timeout int, linktype string
 RETURN:  a list, containing the results of commands[i] applied to arg[i],
@@ -192,7 +192,7 @@ example
     parallelWaitAll(command, args);
 }
 
-proc parallelTestAND(def commands, list args, list #)
+proc parallelTestAND(def commands, alias list args, list #)
 "USAGE:   parallelTestAND(commands, args[, timeout, linktype]);
           commands list or string, args list, timeout int, linktype string
 RETURN:   
@@ -217,7 +217,7 @@ example
     echo = 2;
 }
 
-proc parallelTestOR(def commands, list args, list #)
+proc parallelTestOR(def commands, alias list args, list #)
 "USAGE:   parallelTestOR(commands, args[, timeout, linktype]);
           commands list or string, args list, timeout int, linktype string
 RETURN:   
