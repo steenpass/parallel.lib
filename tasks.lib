@@ -518,7 +518,7 @@ static proc removeFromIntvec(intvec v, int n)
     return(v);
 }
 
-proc give_priority(intvec queue, int id)
+static proc give_priority(intvec queue, int id)
 {
     int size_queue = size(queue);
     int i;
