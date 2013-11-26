@@ -330,6 +330,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     }
                     if (state[id] == 2) {   // computed
                         write(links[assignment[id]], 1);
+                        demanded_tasks = removeFromIntvec(demanded_tasks, id);
+                        ndemanded--;
                         results_sent++;
                     }
                 }
@@ -430,6 +432,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     id = demanded_tasks[i];
                     if (state[id] == 2) {   // computed
                         write(links[assignment[id]], 1);
+                        demanded_tasks = removeFromIntvec(demanded_tasks, id);
+                        ndemanded--;
                         results_sent++;
                     }
                 }
