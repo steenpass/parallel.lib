@@ -240,7 +240,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
         }
         while (wait == 0) {
-            wait = waitfirst(links, 1000);
+            wait = waitfirst(links, 500);
             // wait == -1 (all links crashed) should not happen
             if (wait == 0) {
                 while (-wait < nwaiting) {
