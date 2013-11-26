@@ -167,7 +167,7 @@ EXAMPLE:  example startTasks; shows an example"
     int pid = system("pid");
     link l(pid) = "ssi:fork";
     open(l(pid));
-    write(l(pid), quote(startTasks_child(#, pid)));
+    write(l(pid), quote(startTasks_child(#, eval(pid))));
     int port = read(l(pid));
     link L(pid) = "ssi:connect localhost:"+string(port);
     open(L(pid));
