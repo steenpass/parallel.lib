@@ -241,7 +241,6 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         while (wait == 0) {
             wait = waitfirst(links, 500);
-            // wait == -1 (all links crashed) should not happen
             if (wait == 0) {
                 while (-wait < nwaiting) {
                     if (system("semaphore", "try_acquire", sem_leaves) == 1) {
@@ -570,7 +569,7 @@ EXAMPLE:  example waitTask; shows an example"
         timeout = #[1];
     }
 
-    // check for errors
+    /* check for errors */
     if (timeout < 0) {
         ERROR("negative timeout");
     }
@@ -770,7 +769,7 @@ EXAMPLE:  example pollTask; shows an example"
         return(0);
     }
     if (state == 2) {   // computed
-        int index = read(tasks[t.index].links[1]);
+        int index = read(tasks[t.index].links[1]);   // index == t.index
         tasks[t.index].result = read(tasks[t.index].links[1]);
         write(tasks[t.index].links[2], 3);
         write(tasks[t.index].links[2], tasks[t.index].id);

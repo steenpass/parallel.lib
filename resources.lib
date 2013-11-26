@@ -12,7 +12,7 @@ KEYWORDS:  Semaphores; Parallelization; Links, user interface
 PROCEDURES:
 ";
 
-/* initialize the (lib-)global variable NCORES */
+/* initialize (lib-)global variables */
 static proc mod_init()
 {
     int sem_cores = 0;   // set in kernel
