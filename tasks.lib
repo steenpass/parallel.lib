@@ -215,7 +215,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
     int code;
     int id;
     intvec demanded_tasks = 0, 0;   // zeroes for easier handling
-    int ndemanded;
+    int ndemanded = -1;
 
     int granted_leaves;
     int results_sent;
@@ -319,7 +319,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 if (ndemanded > size(demanded_tasks)-2) {
                     ndemanded = size(demanded_tasks)-2;
                 }
-                if (demanded_tasks == 0:2 && ndemanded == 0) {
+                if (demanded_tasks == 0:2 && ndemanded == -1) {
                     write(l(pid_parent), results_sent);
                 }
                 else {
@@ -390,7 +390,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             }
         }
     }
-    while (nfinished < nlocaltasks || dont_exit) {
+    while (nfinished < nlocaltasks || ndemanded != -1) {
         wait = waitfirst(links);
         if (wait <= nlocaltasks) {
             code = read(links[wait]);
@@ -431,7 +431,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 if (ndemanded > size(demanded_tasks)-2) {
                     ndemanded = size(demanded_tasks)-2;
                 }
-                if (demanded_tasks == 0:2 && ndemanded == 0) {
+                if (demanded_tasks == 0:2 && ndemanded == -1) {
                     write(l(pid_parent), results_sent);
                 }
                 else {
@@ -703,7 +703,7 @@ EXAMPLE:  example waitTask; shows an example"
     for (j = size(requests); j > 0; j--) {
         write(requests[j][3], 1);
         write(requests[j][3], 0:2);
-        write(requests[j][3], 0);
+        write(requests[j][3], -1);
     }
     int results_sent;
     for (j = size(requests); j > 0; j--) {
