@@ -200,6 +200,7 @@ KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
 EXAMPLE:  @code{example parallelTestAND;} shows an example."
 {
+    // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
     int i;
     for (i = size(results); i > 0; i--) {
@@ -237,6 +238,7 @@ KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
           Skeletons for parallelization; Distributed computing
 EXAMPLE:  @code{example parallelTestAND;} shows an example."
 {
+    // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
     int i;
     for (i = size(results); i > 0; i--) {

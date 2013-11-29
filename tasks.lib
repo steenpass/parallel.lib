@@ -17,30 +17,44 @@ PROCEDURES:
                             return immediately, otherwise
 ";
 
+/*
+Rationale for developers
+
+
+*/
+
 LIB "resources.lib";
 
 static proc mod_init()
 {
+    /* initialize the semaphores */
     if (!defined(Resources)) {
         LIB "resources.lib";
     }
+    // the number of processor cores
     int sem_cores = Resources::sem_cores;
     exportto(Tasks, sem_cores);
+    // the number of leaves in the parallel tree (not strict)
     int sem_leaves = semaphore(system("cpu")+10);
     exportto(Tasks, sem_leaves);
+    // the number of processes waiting for sem_cores with low priority
     int sem_queue = semaphore(2);
     exportto(Tasks, sem_queue);
+
+    /* define the Singular type 'task' */
     newstruct("task", "int index");
     newstruct("internal_task", "int id, string command, list arguments,"
         +"def result, string state, list links, int linkID");
     system("install", "task", "=", createTask, 1);
     system("install", "task", "==", compareTasks, 2);
     system("install", "task", "print", printTask, 1);
-    list tasks;
+
+    /* define (lib-)global variables */
+    list tasks;     // the lib-internal list of tasks
     exportto(Tasks, tasks);
-    int ntasks;
+    int ntasks;     // the current maximal index in 'tasks'
     exportto(Tasks, ntasks);
-    int nlinkIDs;
+    int nlinkIDs;   // the current maximal linkID
     exportto(Tasks, nlinkIDs);
 }
 
@@ -240,7 +254,7 @@ EXAMPLE:  example startTasks; shows an example"
         }
     }
     for (i = nargs; i > 0; i--) {
-        tasks[#[i].index].id = i;
+        tasks[#[i].index].id = i;   // has to be set before forking
         tasks[#[i].index].state = "started";
     }
     int pid = system("pid");
@@ -285,23 +299,31 @@ static proc startTasks_child(list localtasks, int pid_parent)
 
     int nlocaltasks = size(localtasks);
     intvec state = 0:nlocaltasks;
+        // the internal state of each localtask (see rationale)
     int nwaiting = nlocaltasks;
+        // the number of local tasks with internal state 0 (waiting)
     int nfinished;
+        // the number of local tasks with internal state 3 (result sent) or
+        // -1 (stopped)
     intvec queue = 0, 1..nlocaltasks, 0;   // zeroes for easier handling
 
     list links;
     links[nlocaltasks+1] = l(pid_parent);
     intvec assignment = 0:nlocaltasks;
+        // the task with id = i is running in link no. assignment[i]
     int nlinks;
 
+    // data sent by other processes
     int code;
     int id;
     intvec demanded_tasks = 0, 0;   // zeroes for easier handling
     int ndemanded = -1;
 
+    // internal counts
     int granted_leaves;
     int results_sent;
 
+    // auxiliary variables
     int wait;
     int deadlock;
     int tmp;
@@ -368,7 +390,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
-            if (code == 0) {   // stop
+            if (code == 0) {   // stopTask
                 id = read(l(pid_parent));
                 if (state[id] == 0) {   // waiting
                     queue = removeFromIntvec(queue, id);
@@ -391,7 +413,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 nfinished++;
                 state[id] = -1;
             }
-            if (code == 1) {   // wait
+            if (code == 1) {   // waitTasks
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
                 if (ndemanded > size(demanded_tasks)-2) {
@@ -439,9 +461,9 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     queue = 0, queue[3..size(queue)];
                 }
             }
-            if (code == 2) {   // poll
+            if (code == 2) {   // pollTask
                 id = read(l(pid_parent));
-                if (state[id] == 0) {
+                if (state[id] == 0) {   // waiting
                     queue = give_priority(queue, id);
                 }
                 if (state[id] == 2) {   // computed
@@ -483,7 +505,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
         }
         if (wait == nlocaltasks+1) {
             code = read(l(pid_parent));
-            if (code == 0) {   // stop
+            if (code == 0) {   // stopTask
                 id = read(l(pid_parent));
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
@@ -498,7 +520,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 // else: nothing to do
                 state[id] = -1;
             }
-            if (code == 1) {   // wait
+            if (code == 1) {   // waitTasks
                 demanded_tasks = read(l(pid_parent));
                 ndemanded = read(l(pid_parent));
                 if (ndemanded > size(demanded_tasks)-2) {
@@ -520,7 +542,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     }
                 }
             }
-            if (code == 2) {   // poll
+            if (code == 2) {   // pollTask
                 id = read(l(pid_parent));
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
@@ -565,6 +587,9 @@ static proc startTasks_grandchild(int index, int pid_grandparent,
     return(2);
 }
 
+/* Check if n is an element of v[2..(size(v)-1)].
+ * Note that v[1] and v[size(v)] are not checked.
+ */
 static proc isElement(alias intvec v, alias int n)
 {
     int i;
@@ -576,6 +601,9 @@ static proc isElement(alias intvec v, alias int n)
     return(0);
 }
 
+/* Remove the first occurence (if any) of n in v[2..(size(v)-1)].
+ * Note that v[1] and v[size(v)] are not checked.
+ */
 static proc removeFromIntvec(intvec v, int n)
 {
     int size_v = size(v);
@@ -588,6 +616,9 @@ static proc removeFromIntvec(intvec v, int n)
     return(v);
 }
 
+/* Move the first occurence (if any) of id in queue[2..(size(queue)-1)] to
+ * queue[2]. Note that queue[1] and queue[size(v)] are not checked.
+ */
 static proc give_priority(intvec queue, int id)
 {
     int size_queue = size(queue);

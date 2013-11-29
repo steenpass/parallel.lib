@@ -37,7 +37,7 @@ EXAMPLE:  example addcores; shows an example"
         ERROR("The number of cores to use must be at least 1.");
     }
 
-    /* change value of semaphore */
+    /* change the value of the semaphore */
     int i;
     int tmp;
     if (n >= 0) {
