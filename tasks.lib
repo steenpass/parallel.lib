@@ -172,11 +172,11 @@ example
 proc printTask(task t)
 {
     if (t.index == 0) {
-        "An undefined task";
+        "An uninitialized task";
         return();
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        "An undefined task";
+        "An uninitialized task";
         return();
     }
     "A task with the following properties:"+newline
@@ -226,10 +226,12 @@ EXAMPLE:  example startTasks; shows an example"
             ERROR("argument not of type 'task' (argument no. "+string(i)+")");
         }
         if (#[i].index == 0) {
-            ERROR("cannot start an undefined task (task no. "+string(i)+")");
+            ERROR("cannot start an uninitialized task (task no. "
+                +string(i)+")");
         }
         if (typeof(tasks[#[i].index]) != "internal_task") {
-            ERROR("cannot start an undefined task (task no. "+string(i)+")");
+            ERROR("cannot start an uninitialized task (task no. "
+                +string(i)+")");
         }
         if (tasks[#[i].index].state != "created"
             && tasks[#[i].index].state != "stopped") {
@@ -606,10 +608,10 @@ KEYWORDS: Parallelization; Links
 EXAMPLE:  example stopTask; shows an example"
 {
     if (t.index == 0) {
-        ERROR("cannot stop an undefined task");
+        ERROR("cannot stop an uninitialized task");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        ERROR("cannot stop an undefined task");
+        ERROR("cannot stop an uninitialized task");
     }
     if (tasks[t.index].state != "started") {
         ERROR("cannot stop a task whose state is not 'started'");
@@ -672,11 +674,11 @@ EXAMPLE:  example waitTask; shows an example"
             ERROR("element not of type 'task' (element no. "+string(i)+")");
         }
         if (t[i].index == 0) {
-            ERROR("cannot wait for an undefined task (task no. "+string(i)
+            ERROR("cannot wait for an uninitialized task (task no. "+string(i)
                 +")");
         }
         if (typeof(tasks[t[i].index]) != "internal_task") {
-            ERROR("cannot wait for an undefined task (task no. "+string(i)
+            ERROR("cannot wait for an uninitialized task (task no. "+string(i)
                 +")");
         }
         if (tasks[t[i].index].state != "started"
@@ -856,10 +858,10 @@ KEYWORDS: Parallelization; Links
 EXAMPLE:  example pollTask; shows an example"
 {
     if (t.index == 0) {
-        ERROR("cannot poll an undefined task");
+        ERROR("cannot poll an uninitialized task");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        ERROR("cannot poll an undefined task");
+        ERROR("cannot poll an uninitialized task");
     }
     if (tasks[t.index].state != "started"
         && tasks[t.index].state != "completed") {
@@ -907,10 +909,10 @@ example
 proc getCommand(task t)
 {
     if (t.index == 0) {
-        ERROR("cannot get command of an undefined task");
+        ERROR("cannot get command of an uninitialized task");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        ERROR("cannot get command of an undefined task");
+        ERROR("cannot get command of an uninitialized task");
     }
     return(tasks[t.index].command);
 }
@@ -928,10 +930,10 @@ example
 proc getArguments(task t)
 {
     if (t.index == 0) {
-        ERROR("cannot get arguments of an undefined task");
+        ERROR("cannot get arguments of an uninitialized task");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        ERROR("cannot get arguments of an undefined task");
+        ERROR("cannot get arguments of an uninitialized task");
     }
     return(tasks[t.index].arguments);
 }
@@ -949,10 +951,10 @@ example
 proc getResult(task t)
 {
     if (t.index == 0) {
-        ERROR("cannot get result of an undefined task");
+        ERROR("cannot get result of an uninitialized task");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        ERROR("cannot get result of an undefined task");
+        ERROR("cannot get result of an uninitialized task");
     }
     if (tasks[t.index].state != "completed") {
         ERROR("cannot get result of a task which is not completed");
@@ -975,10 +977,10 @@ example
 proc getState(task t)
 {
     if (t.index == 0) {
-        return("undefined");
+        return("uninitialized");
     }
     if (typeof(tasks[t.index]) != "internal_task") {
-        return("undefined");
+        return("uninitialized");
     }
     return(tasks[t.index].state);
 }
