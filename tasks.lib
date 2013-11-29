@@ -18,9 +18,111 @@ PROCEDURES:
 ";
 
 /*
-Rationale for developers
+RATIONALE FOR DEVELOPERS
+
+The Singular type 'task'
+------------------------
+tasks.lib introduces a Singular type 'task' which makes use of a pointer-like
+model in order to avoid unnecessary copying of data. 'task' is defined as a
+newstruct whose only member is 'int index'. This index points to an entry in
+the lib-internal list 'tasks'. The elements of this list are of the type
+'internal_task' which is defined as a newstruct with the following members:
+int id         - the internal ID
+string command - the command
+list arguments - the arguments
+def result     - the result
+string state   - the current state, see 'The life cycle of a task'
+list links     - control handles, see 'Links'
+int linkID     - the ID of the control handles
 
 
+The life cycle of a task
+------------------------
+'uninitialized' --> 'created' --> 'started' --> 'completed'
+                                     | ^
+                                     v |
+                                  'stopped'
+
+The state of a task t is 'uninitialized' iff
+(t.index == 0) or (typeof(tasks[t.index]) != "internal_task").
+
+A task can be reset to 'uninitialized' by killTask() at any time.
+
+
+Assigned members for 'internal_task'
+------------------------------------
+For each state, the following members of an internal_task must be assigned:
+
+created:       command arguments        state
+started:    id command arguments        state links linkID
+stopped:       command arguments        state
+completed:     command arguments result state
+
+All other members should be wiped out.
+
+Local supervisors
+-----------------
+A call of 'startTasks(t(1..n));' for tasks t(1), ..., t(n) creates a child
+process which plays the role of a supervisor for these tasks. The computation
+of the tasks is done in child processes of the supervisor.
+
+The supervisor assigns an internal state to each task which is represented by
+an integer. The meaning of these integers and their relation to the global
+state of each task is as follows:
+
+internal state | meaning           | corresponding global state
+---------------|-------------------|---------------------------
+             0 | waiting           | started
+             1 | started           | started
+             2 | (result) computed | started
+             3 | (result) sent     | completed
+            -1 | stopped           | stopped
+
+Links
+-----
+The ssi link between the main process and the supervisor is named 'l(pid)'
+where pid is the PID of the main process. The links between the supervisor and
+its child processes are named 'll(pid)(1)', 'll(pid)(2)', ... where pid is the
+PID of the supervisor. The link between the child processes of the supervisor
+and the main process is named 'L(pid)' where pid is the PID of the main
+process. This link is only for sending the results to the main process and must
+not be used in the other direction!
+
+For any task t whose state is 'started', tasks[t.index].links is
+list(L(pid), l(pid)) where pid is the PID of the main process.
+
+Communication model
+-------------------
+stopTask() <--> supervisor
+    0, id -->
+
+waitTasks() <--> supervisor
+(demanded_task is an intvec containing the IDs of the tasks which are being
+waited for; ndemanded is the number of tasks that is being waited for.)
+    1, demanded_tasks, ndemanded -->
+    [receiving results]
+    1, 0:2, -1 -->
+    results_sent <--
+    [receiving remaining results]
+
+pollTask() <--> supervisor
+    2, id -->
+    state <--
+    [receive result if state == 2 (computed)]
+
+startTasks_child() <--> startTasks_grandchild()
+    [compute the result]
+    1, id <--
+    [wait until the result is requested]
+    1 -->
+    [send the result]
+    2 <--
+
+sending and receiving results:
+main process <--> supervisor <--> startTasks_grandchild()
+    [request the result, see above]
+    index, result  (main process <-- startTasks_grandchild())
+    3, id          (main process --> supervisor)
 */
 
 LIB "resources.lib";
