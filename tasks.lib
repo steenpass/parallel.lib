@@ -56,6 +56,18 @@ proc createTask(alias string command, alias list arguments)
     t.index = ntasks;
     return(t);
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = createTask("std", list(I));
+    // This is the same as:
+    // task t = "std", list(I);
+    t;
+    killTask(t);
+}
 
 proc killTask(task t)
 {
@@ -69,6 +81,19 @@ proc killTask(task t)
         stopTask(t);
     }
     tasks[t.index] = def(0);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    startTasks(t);
+    t;
+    killTask(t);
+    t;
+    getState(t);
 }
 
 proc copyTask(task t)
@@ -88,6 +113,21 @@ proc copyTask(task t)
     t_copy.index = ntasks;
     return(t_copy);
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t1 = "std", list(I);
+    startTasks(t1);
+    waitAllTasks(t1);
+    task t2 = copyTask(t1);
+    killTask(t1);
+    t2;   // t2 survived
+    getResult(t2);
+    killTask(t2);
+}
 
 // arguments and result are not compared
 proc compareTasks(task t1, task t2)
@@ -106,6 +146,28 @@ proc compareTasks(task t1, task t2)
     }
     return(1);
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t1 = "std", list(I);
+    task t2 = "std", list(I);
+    compareTasks(t1, t2);
+    startTasks(t1);
+    waitAllTasks(t1);
+    t1 == t2;   // the same as compareTasks(t1, t2);
+    killTask(t1);
+    killTask(t2);
+    // The arguments and the result are not compared!
+    ideal J = x;
+    task t3 = "std", list(I);
+    task t4 = "std", list(J);
+    t3 == t4;
+    killTask(t3);
+    killTask(t4);
+}
 
 proc printTask(task t)
 {
@@ -121,6 +183,21 @@ proc printTask(task t)
         +"command:          "+tasks[t.index].command+newline
         +"no. of arguments: "+string(size(tasks[t.index].arguments))+newline
         +"state:            "+tasks[t.index].state;
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t;
+    printTask(t);
+    t = "std", list(I);
+    t;   // the same as printTask(t);
+    startTasks(t);
+    waitAllTasks(t);
+    t;
+    killTask(t);
 }
 
 proc startTasks(list #)
@@ -181,13 +258,16 @@ example
 {
     "EXAMPLE:";
     echo = 2;
-    ring r = 0, (x,y), dp;
-    ideal i = x, x+y;
-    list L = startTasks(list("std", "slimgb"), list(list(i), list(i)));
-    read(L[1]);
-    read(L[1]);
-    read(L[1]);
-    read(L[1]);
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t1 = "std", list(I);
+    task t2 = "slimgb", list(I);
+    startTasks(t1, t2);
+    waitAllTasks(t1, t2);
+    getResult(t1);
+    getResult(t2);
+    killTask(t1);
+    killTask(t2);
 }
 
 /* This procedure is started within the child after forking. */
@@ -545,11 +625,13 @@ example
 {
     "EXAMPLE:";
     echo = 2;
-    ring r = 0, (x,y,z), lp;
-    ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
-    link l = startTask("std", list(i));
-    system("sh", "sleep 3s");
-    stopTask(l);
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    startTasks(t);
+    stopTask(t);
+    t;
+    killTask(t);
 }
 
 proc waitTasks(list t, int N, list #)
@@ -731,15 +813,37 @@ example
 {
     "EXAMPLE:";
     echo = 2;
-    ring r = 0, (x,y), dp;
-    ideal i = x, x+y;
-    link l = startTask("std", list(i));
-    waitTask(l);
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t1 = "std", list(I);
+    task t2 = "slimgb", list(I);
+    startTasks(t1, t2);
+    waitTasks(list(t1, t2), 2);   // wait for both tasks
+    getResult(t1);
+    getResult(t2);
+    killTask(t1);
+    killTask(t2);
 }
 
 proc waitAllTasks(list #)
 {
     list tmp = waitTasks(#, size(#));
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t1 = "std", list(I);
+    task t2 = "slimgb", list(I);
+    startTasks(t1, t2);
+    waitAllTasks(t1, t2);   // the same as 'waitTasks(list(t1, t2), 2);',
+                            // but without return value
+    getResult(t1);
+    getResult(t2);
+    killTask(t1);
+    killTask(t2);
 }
 
 proc pollTask(task t)
@@ -789,19 +893,15 @@ example
 {
     "EXAMPLE:";
     echo = 2;
-    ring r = 0, (x,y,z), lp;
-    ideal i = 3x3y+x3+xy3+y2z2, 2x3z-xy-xz3-y4-z2, 2x2yz-2xy2+xz2-y4;
-    link l1 = startTask("std", list(i));
-    system("sh", "sleep 3s");
-    // the task is not yet finished
-    pollTask(l1);
-    stopTask(l1);
-    ring s = 0, (x,y), dp;
-    ideal i = x, x+y;
-    link l2 = startTask("std", list(i));
-    system("sh", "sleep 1s");
-    // the task is finished
-    pollTask(l2);
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    startTasks(t);
+    waitAllTasks(t);
+    pollTask(t);   // task already completed
+    t;
+    getResult(t);
+    killTask(t);
 }
 
 proc getCommand(task t)
@@ -814,6 +914,16 @@ proc getCommand(task t)
     }
     return(tasks[t.index].command);
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    getCommand(t);
+    killTask(t);
+}
 
 proc getArguments(task t)
 {
@@ -824,6 +934,16 @@ proc getArguments(task t)
         ERROR("cannot get arguments of an undefined task");
     }
     return(tasks[t.index].arguments);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    getArguments(t);
+    killTask(t);
 }
 
 proc getResult(task t)
@@ -839,6 +959,18 @@ proc getResult(task t)
     }
     return(tasks[t.index].result);
 }
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    startTasks(t);
+    waitAllTasks(t);
+    getResult(t);
+    killTask(t);
+}
 
 proc getState(task t)
 {
@@ -849,6 +981,21 @@ proc getState(task t)
         return("undefined");
     }
     return(tasks[t.index].state);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    ring R = 0, (x,y), dp;
+    ideal I = x9y2+x10, x2y7-y8;
+    task t = "std", list(I);
+    getState(t);
+    startTasks(t);
+    getState(t);
+    waitAllTasks(t);
+    getState(t);
+    killTask(t);
+    getState(t);
 }
 
 proc semaphore(int n)
@@ -861,6 +1008,16 @@ proc semaphore(int n)
         ERROR("no more semphores");
     }
     return(i);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    int sem = semaphore(1);
+    system("semaphore", "acquire", sem);
+    system("semaphore", "try_acquire", sem);
+    system("semaphore", "release", sem);
+    system("semaphore", "try_acquire", sem);
 }
 
 / * construct the string "name[1], name[2], name[3], ..., name[length]" */
