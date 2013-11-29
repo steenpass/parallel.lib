@@ -2,14 +2,28 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   resources.lib  Tools to manage compute servers
+LIBRARY:   resources.lib  Tools to manage the computational resources
+
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
-SEE ALSO:  link, tasks_lib, parallel_lib
+OVERVIEW:
+The purpose of this library is to manage the computational resources of
+a SINGULAR session. The library tasks.lib and any library build upon tasks.lib
+respect these settings, i.e. they will not use more computational resources
+than provided via resources.lib.
 
-KEYWORDS:  Semaphores; Parallelization; Links, user interface
+@* The provided procedures and their implementation are currently quite simple.
+The library can be extended later on to support, e.g., distributed computations
+on several servers.
+
+KEYWORDS:  parallelization; distributed computing
+
+SEE ALSO:  tasks_lib, parallel_lib
 
 PROCEDURES:
+  addcores();  add an integer to the number of available processor cores
+  setcores();  set the number of available processor cores
+  getcores();  get the number of available processor cores
 ";
 
 /* initialize (lib-)global variables */
@@ -23,13 +37,14 @@ static proc mod_init()
 
 proc addcores(int n)
 "USAGE:   addcores(n), n int
-RETURN:   the number of cores that will be used.
-          @* n cores will be added to the number of cores to use.
-          @* If n is negative, the number of cores to use will be reduced. Note
-          that this adjustment may take some time.
-NOTE:     The number of cores to use must be at least 1.
+RETURN:   the adjusted number of available processor cores.
+       @* n is added to the number of available processor cores.
+       @* If n is negative, the number of available processor cores is reduced.
+          Note that this adjustment may take some time.
+NOTE:     The number of available processor cores must be at least 1.
+       @* This procedure should only be called in the main process of a
+          SINGULAR session and not within any task defined via tasks.lib.
 SEE ALSO: setcores, getcores, tasks_lib, parallel_lib
-KEYWORDS: Parallelization; Links
 EXAMPLE:  example addcores; shows an example"
 {
     /* check for errors */
@@ -65,12 +80,14 @@ example
 
 proc setcores(int n)
 "USAGE:   setcores(n), n int
-RETURN:   the number of cores that will be used.
-          @* The number of cores to use will be set to n.
-          @* Note that reducing the number of cores to use may take some time.
-NOTE:     The number of cores to use must be at least 1.
+RETURN:   the adjusted number of available processor cores, i.e. n.
+       @* The number of available processor cores is set to n.
+       @* Note that reducing the number of available processor cores may take
+          some time.
+NOTE:     The number of available processor cores must be at least 1.
+       @* This procedure should only be called in the main process of a
+          SINGULAR session and not within any task defined via tasks.lib.
 SEE ALSO: addcores, getcores, tasks_lib, parallel_lib
-KEYWORDS: Parallelization; Links
 EXAMPLE:  example setcores; shows an example"
 {
     return(addcores(n-NCORES));
@@ -84,10 +101,11 @@ example
 }
 
 proc getcores()
-"USAGE:   addcores(n), n int
-RETURN:   the number of cores that are used.
+"USAGE:   getcores(n), n int
+RETURN:   the number of available processor cores.
+NOTE:     This procedure should only be called in the main process of
+          a SINGULAR session and not within any task defined via tasks.lib.
 SEE ALSO: addcores, setcores, tasks_lib, parallel_lib
-KEYWORDS: Parallelization; Links
 EXAMPLE:  example getcores; shows an example"
 {
     return(NCORES);
