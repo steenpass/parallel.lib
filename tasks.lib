@@ -855,7 +855,7 @@ EXAMPLE:  example waitTask; shows an example"
         requests[j][2][size(requests[j][2])+1] = 0;
         write(requests[j][3], 1);
         write(requests[j][3], requests[j][2]);
-        write(requests[j][3], N);
+        write(requests[j][3], N-ncompleted);
     }
 
     /* wait for the results */
