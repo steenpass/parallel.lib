@@ -834,7 +834,7 @@ example
     killTask(t);
 }
 
-proc waitTasks(list t, int N, list #)
+proc waitTasks(list T, int N, list #)
 "USAGE:   waitTasks(T, N[, timeout]), T list of tasks, N int, timeout int
 RETURN:   an ordered list of the indices of those tasks which have been
           successfully completed. The state of these tasks is set to
@@ -872,7 +872,7 @@ EXAMPLE:  example waitTasks; shows an example"
     if (timeout < 0) {
         ERROR("negative timeout");
     }
-    int nargs = size(t);
+    int nargs = size(T);
     if (nargs == 0) {
         ERROR("missing task");
     }
@@ -881,19 +881,19 @@ EXAMPLE:  example waitTasks; shows an example"
     }
     int i;
     for (i = nargs; i > 0; i--) {
-        if (typeof(t[i]) != "task") {
+        if (typeof(T[i]) != "task") {
             ERROR("element not of type 'task' (element no. "+string(i)+")");
         }
-        if (t[i].index == 0) {
+        if (T[i].index == 0) {
             ERROR("cannot wait for an uninitialized task (task no. "+string(i)
                 +")");
         }
-        if (typeof(tasks[t[i].index]) != "internal_task") {
+        if (typeof(tasks[T[i].index]) != "internal_task") {
             ERROR("cannot wait for an uninitialized task (task no. "+string(i)
                 +")");
         }
-        if (tasks[t[i].index].state != "started"
-            && tasks[t[i].index].state != "completed") {
+        if (tasks[T[i].index].state != "started"
+            && tasks[T[i].index].state != "completed") {
             ERROR("cannot wait for a task whose state is not"+newline
                 +"'started' or 'completed' (task no. "+string(i)+")");
         }
@@ -906,24 +906,24 @@ EXAMPLE:  example waitTasks; shows an example"
     int sorted_in;
     int j;
     for (i = 1; i <= nargs; i++) {
-        if (tasks[t[i].index].state == "completed") {
+        if (tasks[T[i].index].state == "completed") {
             ncompleted++;
         }
-        else {   // tasks[t[i].index].state == "started"
+        else {   // tasks[T[i].index].state == "started"
             sorted_in = 0;
             for (j = size(requests); j > 0; j--) {
-                if (requests[j][1] == tasks[t[i].index].linkID) {
+                if (requests[j][1] == tasks[T[i].index].linkID) {
                     requests[j][2][size(requests[j][2])+1] =
-                        tasks[t[i].index].id;
+                        tasks[T[i].index].id;
                     sorted_in = 1;
                     break;
                 }
             }
             if (!sorted_in) {
-                requests[size(requests)+1] = list(tasks[t[i].index].linkID,
-                    intvec(0, tasks[t[i].index].id),
-                    tasks[t[i].index].links[2]);
-                links[size(links)+1] = tasks[t[i].index].links[1];
+                requests[size(requests)+1] = list(tasks[T[i].index].linkID,
+                    intvec(0, tasks[T[i].index].id),
+                    tasks[T[i].index].links[2]);
+                links[size(links)+1] = tasks[T[i].index].links[1];
             }
         }
     }
@@ -1011,7 +1011,7 @@ EXAMPLE:  example waitTasks; shows an example"
     completed[nargs+1] = 0;
     j = 0;
     for (i = 1; i <= nargs; i++) {
-        if (tasks[t[i].index].state == "completed") {
+        if (tasks[T[i].index].state == "completed") {
             j++;
             completed[j] = i;
         }
