@@ -191,6 +191,16 @@ EXAMPLE:  example parallelTestAND; shows an example"
     // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
     int i;
+    for (i = size(args); i > 0; i--) {
+        if (typeof(results[i]) != "int" && typeof(results[i]) != "none") {
+            ERROR("result no. "+string(i)+" not of type int");
+        }
+    }
+    for (i = size(args); i > 0; i--) {
+        if (typeof(results[i]) == "none") {   // timeout
+            return(-1);
+        }
+    }
     for (i = size(results); i > 0; i--) {
         if (!results[i]) {
             return(0);
@@ -237,6 +247,16 @@ EXAMPLE:  example parallelTestAND; shows an example"
     // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
     int i;
+    for (i = size(args); i > 0; i--) {
+        if (typeof(results[i]) != "int" && typeof(results[i]) != "none") {
+            ERROR("result no. "+string(i)+" not of type int");
+        }
+    }
+    for (i = size(args); i > 0; i--) {
+        if (typeof(results[i]) == "none") {   // timeout
+            return(-1);
+        }
+    }
     for (i = size(results); i > 0; i--) {
         if (results[i]) {
             return(1);
