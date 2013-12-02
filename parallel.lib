@@ -2,68 +2,53 @@
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   parallel.lib  Tools for parallelization
+LIBRARY:   parallel.lib  An abstraction layer for parallel skeletons
+
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
 OVERVIEW:
-This library provides tools to do several computations in parallel. They
-are aimed at ordinary Singular users as well as authors of Singular
-libraries.
-@* Even without this library, it is possible to execute self-defined
-Singular commands in parallel using @ref{links}, but the handling of
-such links can be quite tedious. With the pocedures described below,
-this can be done by one-line commands.
-@* There are many parallel 'skeletons' (i.e. ways in which parallel
-tasks rely upon and interact with each other). A few of them are already
-implemented. Future plans include an abstraction layer for modular
-techniques (see @ref{modular_lib}), 'worker farms', and parallel tests.
+This library provides implementations of several parallel 'skeletons' (i.e.
+ways in which parallel tasks rely upon and interact with each other). It is
+based on the library tasks.lib and aims at both ordinary Singular users as well
+as authors of Singular libraries.
 
-SEE ALSO:  link, tasks_lib, modular_lib, modstd_lib, assprimeszerodim_lib
+KEYWORDS:  parallelization; parallel skeletons; distributed computing
 
-KEYWORDS:  parallel.lib; Parallelization; Links, user interface;
-           Skeletons for parallelization; Distributed computing
+SEE ALSO:  resources_lib, tasks_lib, modstd_lib, modnormal_lib
 
 PROCEDURES:
-  parallelWaitN(...)     execute several jobs in parallel,
-                         wait for N of them to finish
-  parallelWaitFirst(...) execute several jobs in parallel,
-                         wait for the first to finish
-  parallelWaitAll(...)   execute several jobs in parallel,
-                         wait for all of them to finish
+  parallelWaitN();      execute several jobs in parallel
+                        and wait for N of them to finish
+  parallelWaitFirst();  execute several jobs in parallel
+                        and wait for the first to finish
+  parallelWaitAll();    execute several jobs in parallel
+                        and wait for all of them to finish
+  parallelTestAND();    run several tests in parallel
+                        and determine if they all succeed
+  parallelTestOR();     run several tests in parallel
+                        and determine if any of them succeeds
 ";
 
 LIB "tasks.lib";
 
 proc parallelWaitN(alias list commands, alias list args, int N, list #)
-"USAGE:  parallelWaitN(commands, args, N[, timeout, linktype]); commands list,
-         args list, N int, timeout int, linktype string
-RETURN:  a list, containing the results of commands[i] applied to arg[i],
-         i = 1, ..., size(commands).
-         @* The procedure waits for N jobs to finish.
-
-         @* OPTIONAL PARAMETERS:
-
-            An optional timeout in ms can be provided. Default is 0 which
-            disables the timeout.
-
-            Supported linktypes are up to now \"ssi\" (default) and \"mp\", see
-            @ref{Ssi links} and @ref{MP links}.
-NOTE:       The entries of the list commands must be strings.
-         @* The entries of the list args must be lists.
-         @* The type of any entry of the returned list whose corresponding task
-            did not finish (due to timeout or error) is \"none\".
-            Be careful when using commands whose return value might be of type
-            \"none\"!
-         @* The returned list may contain more than N results if several jobs
-            finished \"at the same time\". It may contain less than N results
-            in the case of timeout or errors occurring.
-         @* MP links do not work with a 64 bit version of Singular. If you want
-            to use MP links, make sure that MP is available. This can be
-            checked by the Singular command @code{system(\"with\", \"MP\");}.
-SEE ALSO: Ssi links, MP links, waitfirst, waitall, tasks_lib
-KEYWORDS: parallelWaitN; Parallelization; Links, user interface;
-          Skeletons for parallelization; Distributed computing
-EXAMPLE:  @code{example parallelWaitN;} shows an example."
+"USAGE:   parallelWaitN(commands, arguments, N[, timeout]); commands list,
+          arguments list, N int, timeout int
+RETURN:   a list, containing the results of commands[i] applied to
+          arguments[i], i = 1, ..., size(arguments).
+       @* The procedure waits for N jobs to finish.
+       @* An optional timeout in ms can be provided. Default is 0 which
+          disables the timeout.
+NOTE:     The entries of the list commands must be strings. The entries of the
+          list arguments must be lists.
+       @* The type of any entry of the returned list whose corresponding task
+          did not finish (due to timeout or error) is \"none\".
+       @* The returned list may contain more than N results if several jobs
+          finished \"at the same time\". It may contain less than N results in
+          the case of timeout or errors occurring.
+KEYWORDS: parallel skeletons
+SEE ALSO: parallelWaitAll, parallelWaitFirst, tasks_lib
+EXAMPLE:  example parallelWaitN; shows an example"
 {
     // auxiliary variables
     int i;
@@ -116,20 +101,18 @@ example
 }
 
 proc parallelWaitFirst(alias list commands, alias list args, list #)
-"USAGE:  parallelWaitFirst(commands, args[, timeout, linktype]); commands list,
-         args list, timeout int, linktype string
-RETURN:  a list, containing at least one (if no timeout occurs) of the results
-         of commands[i] applied to arg[i], i = 1, ..., size(commands).
-         @* The command
-         @code{parallelWaitFirst(list commands, list args, list #)} is
-         synonymous to
-         @code{parallelWaitN(list commands, list args, 1, list #)}. See
-         @ref{parallelWaitN} for details on optional arguments and other
-         remarks.
-SEE ALSO: Ssi links, MP links, waitfirst
-KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
-          Skeletons for parallelization; Distributed computing
-EXAMPLE:  @code{example parallelWaitFirst;} shows an example."
+"USAGE:   parallelWaitFirst(commands, args[, timeout]); commands list,
+          arguments list, timeout int
+RETURN:   a list, containing at least one (if no timeout occurs) of the results
+          of commands[i] applied to arguments[i], i = 1, ..., size(arguments).
+       @* The command @code{parallelWaitFirst(commands, arguments[, timeout])}
+          is synonymous to
+          @code{parallelWaitN(commands, arguments, 1[, timeout])}. See
+          @ref{parallelWaitN} for details on optional arguments and other
+          remarks.
+KEYWORDS: parallel skeletons
+SEE ALSO: parallelWaitN, parallelWaitAll, tasks_lib
+EXAMPLE:  example parallelWaitFirst; shows an example"
 {
     return(parallelWaitN(commands, args, 1, #));
 }
@@ -146,22 +129,19 @@ example
 }
 
 proc parallelWaitAll(def commands, alias list args, list #)
-"USAGE:  parallelWaitAll(commands, args[, timeout, linktype]); commands list or
-         string, args list, timeout int, linktype string
-RETURN:  a list, containing the results of commands[i] applied to arg[i],
-         i = 1, ..., size(commands).
-         @* The command
-         @code{parallelWaitAll(list commands, list args, list #)} is
-         synonymous to
-         @code{parallelWaitN(list commands, list args, size(args), list #)}.
-         See @ref{parallelWaitN} for details on optional arguments and other
-         remarks.
-         If @code{commands} is of type string, this is a shortcut for a list
-         of size @code{size(args)} whose entries are just this string.
-SEE ALSO: Ssi links, MP links, waitall
-KEYWORDS: parallelWaitAll; Parallelization; Links, user interface;
-          Skeletons for parallelization; Distributed computing
-EXAMPLE:  @code{example parallelWaitAll;} shows an example."
+"USAGE:   parallelWaitAll(commands, arguments[, timeout]); commands list or
+          string, arguments list, timeout int
+RETURN:   a list, containing the results of commands[i] applied to
+          arguments[i], i = 1, ..., size(arguments).
+       @* The command @code{parallelWaitAll(commands, arguments[, timeout])} is
+          synonymous to @code{parallelWaitN(commands, arguments,
+          size(arguments)[, timeout])}. See @ref{parallelWaitN} for details on
+          optional arguments and other remarks.
+       @* As a shortcut, @code{commands} can be a string. This is synonymous to
+          providing a list of @code{size(arguments)} copies of this string.
+KEYWORDS: parallel skeletons
+SEE ALSO: parallelWaitFirst, parallelWaitN, tasks_lib
+EXAMPLE:  example parallelWaitAll; shows an example"
 {
     if (typeof(commands) != "list" && typeof(commands) != "string") {
         ERROR("invalid type of first argument");
@@ -191,14 +171,22 @@ example
 }
 
 proc parallelTestAND(def commands, alias list args, list #)
-"USAGE:   parallelTestAND(commands, args[, timeout, linktype]);
-          commands list or string, args list, timeout int, linktype string
-RETURN:   
-NOTE:     
-SEE ALSO: Ssi links, MP links, waitfirst
-KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
-          Skeletons for parallelization; Distributed computing
-EXAMPLE:  @code{example parallelTestAND;} shows an example."
+"USAGE:   parallelTestAND(commands, arguments[, timeout]); commands list or
+          string, arguments list, timeout int
+RETURN:   1, if commands[i] applied to arguments[i] is not equal to zero for
+          all i = 1, ..., size(arguments);
+          0, otherwise.
+       @* An optional timeout in ms can be provided. Default is 0 which
+          disables the timeout. In case of timeout, -1 is returned.
+NOTE:     The entries of the list commands must be strings. The entries of the
+          list arguments must be lists.
+       @* commands[i] applied to arguments[i] must evaluate to an integer for
+          i = 1, ..., size(arguments).
+       @* As a shortcut, @code{commands} can be a string. This is synonymous to
+          providing a list of @code{size(arguments)} copies of this string.
+KEYWORDS: parallel skeletons
+SEE ALSO: parallelTestOR, tasks_lib
+EXAMPLE:  example parallelTestAND; shows an example"
 {
     // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
@@ -229,14 +217,22 @@ example
 }
 
 proc parallelTestOR(def commands, alias list args, list #)
-"USAGE:   parallelTestOR(commands, args[, timeout, linktype]);
-          commands list or string, args list, timeout int, linktype string
-RETURN:   
-NOTE:     
-SEE ALSO: Ssi links, MP links, waitfirst
-KEYWORDS: parallelWaitFirst; Parallelization; Links, user interface;
-          Skeletons for parallelization; Distributed computing
-EXAMPLE:  @code{example parallelTestAND;} shows an example."
+"USAGE:   parallelTestOR(commands, arguments[, timeout]); commands list or
+          string, arguments list, timeout int
+RETURN:   1, if commands[i] applied to arguments[i] is not equal to zero for
+          any i = 1, ..., size(arguments);
+          0, otherwise.
+       @* An optional timeout in ms can be provided. Default is 0 which
+          disables the timeout. In case of timeout, -1 is returned.
+NOTE:     The entries of the list commands must be strings. The entries of the
+          list arguments must be lists.
+       @* commands[i] applied to arguments[i] must evaluate to an integer for
+          i = 1, ..., size(arguments).
+       @* As a shortcut, @code{commands} can be a string. This is synonymous to
+          providing a list of @code{size(arguments)} copies of this string.
+KEYWORDS: parallel skeletons
+SEE ALSO: parallelTestAND, tasks_lib
+EXAMPLE:  example parallelTestAND; shows an example"
 {
     // note: this can be improved
     list results = parallelWaitAll(commands, args, #);
