@@ -1,20 +1,46 @@
-////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 version="$Id$";
 category="General purpose";
 info="
-LIBRARY:   tasks.lib  An interface for tasks using semaphores
+LIBRARY:   tasks.lib  A parallel framework based on tasks
+
 AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
-SEE ALSO:  link, parallel_lib, resources_lib
+OVERVIEW:
+This library provides a parallel framework based on tasks. It introduces a new
+Singular type @code{task}; an object of this type is a command (given by a
+string) applied to a list of arguments. Tasks can be computed in parallel via
+the procedures in this library and they can even be started recursively, i.e.
+from within other tasks.
 
-KEYWORDS:  Semaphores; Parallelization; Links, user interface
+tasks.lib respects the limits for computational resources defined in
+@ref{resources.lib}, i.e., all tasks within the same Singular session will not
+use more computational resources than provided via resources.lib, even if tasks
+are started recursively.
+
+The Singular library @ref{parallel.lib} provides implementations of several
+parallel 'skeletons' based on tasks.lib.
+
+KEYWORDS:  parallelization; distributed computing; task; semaphores
+
+SEE ALSO:  resources_lib, parallel_lib
 
 PROCEDURES:
-  startTask(string, list)   start a new task
-  stopTask(link)            stop the task
-  waitTask(link)            wait for the task and pick up the result
-  pollTask(link)            pick up the result, if task is ready;
-                            return immediately, otherwise
+  createTask();    create a task
+  killTask();      kill a task
+  copyTask();      copy a task
+  compareTasks();  compare two tasks
+  printTask();     print a task
+  startTasks();    start tasks
+  stopTask();      stop a task
+  waitTasks();     wait for a certain number of tasks
+  waitAllTasks();  wait for all tasks
+  pollTask();      poll a task
+  getCommand();    get the command of a task
+  getArguments();  get the arguments of a task
+  getResult();     get the result of a task
+  getState();      get the state of a task
+  semaphore();     initialize a new semaphore
 ";
 
 /*
@@ -161,6 +187,13 @@ static proc mod_init()
 }
 
 proc createTask(alias string command, alias list arguments)
+"USAGE:   createTask(command, arguments), command string, arguments list
+RETURN:   a task with the given command and arguments whose state is 'created'.
+NOTE:     't = command, arguments;' is a shortcut for
+          't = createTask(command, arguments);'.
+SEE ALSO: startTasks, getCommand, getArguments, getState, killTask, copyTask,
+          compareTasks, printTask
+EXAMPLE:  example createTask; shows an example"
 {
     internal_task T;
     ntasks++;
@@ -186,6 +219,15 @@ example
 }
 
 proc killTask(task t)
+"USAGE:   killTask(t), t task
+RETURN:   nothing. If the state of t is 'started', then t is stopped first. The
+          internal data structures of t are erased and its state is set to
+          'uninitialized'.
+NOTE:     'killTask(t);' is not the same as 'kill t'. The latter command does
+          not erase the internal data structures of t. Hence killTask() should
+          be called for any no longer needed task in order to free memory.
+SEE ALSO: stopTask, getState, createTask, printTask
+EXAMPLE:  example killTask; shows an example"
 {
     if (t.index == 0) {
         return();
@@ -213,6 +255,16 @@ example
 }
 
 proc copyTask(task t)
+"USAGE:   copyTask(t), t task
+RETURN:   a copy of t.
+NOTE:     'task t1 = copyTask(t2);' is not the same as 'task t1 = t2;'. After
+          the latter command, t1 points to the same object as t2; any changes
+          to t2 will also effect t1. In contrast to this, copyTask() creates a
+          new independend task.
+       @* A task whose state is 'started' cannot be copied.
+SEE ALSO: getCommand, getArguments, getResult, getState, createTask, killTask,
+          compareTasks, printTask
+EXAMPLE:  example copyTask; shows an example"
 {
     task t_copy;
     if (t.index == 0) {
@@ -245,8 +297,14 @@ example
     killTask(t2);
 }
 
-// arguments and result are not compared
 proc compareTasks(task t1, task t2)
+"USAGE:   compareTasks(t1, t2), t1, t2 tasks
+RETURN:   1, if t1 and t2 coincide;
+          0, otherwise.
+NOTE:     The arguments and the results of t1 and t2 are not compared.
+       @* 't1 == t2' is a shortcut for 'compareTasks(t1, t2)'.
+SEE ALSO: getCommand, getArguments, getResult, getState, copyTask, printTask
+EXAMPLE:  example compareTasks; shows an example"
 {
     if (tasks[t1.index].id != tasks[t2.index].id) {
         return(0);
@@ -286,6 +344,11 @@ example
 }
 
 proc printTask(task t)
+"USAGE:   printTask(t), t task
+RETURN:   nothing. Prints information about t.
+NOTE:     'print(t);' and 't;' are shortcuts for 'printTask(t)'.
+SEE ALSO: getCommand, getArguments, getResult, getState, createTask, killTask
+EXAMPLE:  example printTask; shows an example"
 {
     if (t.index == 0) {
         "An uninitialized task";
@@ -317,19 +380,19 @@ example
 }
 
 proc startTasks(list #)
-"USAGE:   startTasks(commands, Arguments); commands list, Arguments list
-RETURN:   a list L of two links. L[2] gives access to a supervisor link
-          (*not* in the sense of scheduling) which usually remains
-          unused, but shouldn't be closed or killed before enough
-          results are obtained. The results can be read off from L[1].
-          One result is read by applying the command read(L[1]) twice: The
-          first call gives the index (of the command and its arguments
-          within the input lists), the second call gives the actual
-          result. The next call of read(L[1]) then gives the next index
-          and so on.
-SEE ALSO: startTask, stopTask, waitTask, pollTask, parallel_lib, Ssi links,
-          MP links
-KEYWORDS: Parallelization; Links
+"USAGE:   startTasks(t1, t2, ...), t1, t2, ... tasks
+RETURN:   nothing. Starts the tasks t1, t2, ... and sets their states to
+          'started'.
+NOTE:     A task whose state is neither 'created' nor 'stopped' cannot be
+          started.
+       @* If startTasks() is applied to a task whose state is 'stopped', then
+          the computation of this task will be restarted from the beginning.
+       @* Tasks can be started from within other tasks. A started task should
+          not be accessed from within any task other than the one within which
+          it was started.
+       @* For each task, the start of its computation is subject to the
+          internal scheduling.
+SEE ALSO: stopTask, waitTasks, pollTask, getState, createTask, printTask
 EXAMPLE:  example startTasks; shows an example"
 {
     int nargs = size(#);
@@ -734,10 +797,12 @@ static proc give_priority(intvec queue, int id)
 }
 
 proc stopTask(task t)
-"USAGE:   stopTask(l); l link
-RETURN:   none. Stops the task as soon as possible.
-SEE ALSO: startTask, waitTask, pollTask, parallel_lib
-KEYWORDS: Parallelization; Links
+"USAGE:   stopTask(t), t task
+RETURN:   nothing. Stops the t and sets its state to 'stopped'.
+NOTE:     A task whose state is not 'started' cannot be stopped.
+       @* Intermediate results are discarded when a task is stopped.
+       @* killTask() should be called for any no longer needed task.
+SEE ALSO: startTask, waitTasks, pollTask, getState, killTask, printTask
 EXAMPLE:  example stopTask; shows an example"
 {
     if (t.index == 0) {
@@ -770,11 +835,24 @@ example
 }
 
 proc waitTasks(list t, int N, list #)
-"USAGE:   waitTask(l); l link
-RETURN:   the result of the task. This command is eventually blocking.
-SEE ALSO: startTask, stopTask, pollTask, parallel_lib
-KEYWORDS: Parallelization; Links
-EXAMPLE:  example waitTask; shows an example"
+"USAGE:   waitTasks(T, N[, timeout]), T list of tasks, N int, timeout int
+RETURN:   an ordered list of the indices of those tasks which have been
+          successfully completed. The state of these tasks is set to
+          'completed'.
+       @* The procedure waits for N tasks to complete.
+       @* An optional timeout in ms can be provided. Default is 0 which
+          disables the timeout.
+NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
+          waited for.
+       @* The result of any completed task can be accessed via @ref{getResult}.
+       @* The returned list may contain more than N entries if the computation
+          of some tasks has already finished and/or if several tasks finish
+          \"at the same time\". It may contain less than N entries in
+          the case of timeout or errors occurring.
+       @* Polling is guaranteed, i.e. the index of any task t for which
+          'pollTask(t);' would return 1 will appear in the returned list.
+SEE ALSO: startTask, pollTask, getResult, getState, printTask
+EXAMPLE:  example waitTasks; shows an example"
 {
     /* initialize the timer */
     int oldtimerresolution = system("--ticks-per-sec");
@@ -961,6 +1039,18 @@ example
 }
 
 proc waitAllTasks(list #)
+"USAGE:   waitAllTasks(t1, t2, ...), t1, t2, ... tasks
+RETURN:   nothing. Waits for all the tasks t1, t2, ... to complete. The state
+          of the tasks is set to 'completed'.
+NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
+          waited for.
+       @* The result of any completed task can be accessed via @ref{getResult}.
+       @* 'waitAllTasks(t1, t2, ...);' is a shortcut for
+          'waitTasks(list(t1, t2, ...), size(list(t1, t2, ...)));'. Since
+          returning a list of the indices of the completed tasks does not make
+          sense in this case, nothing is returned.
+SEE ALSO: waitTasks, startTask, pollTask, getResult, getState, printTask
+EXAMPLE:  example waitAllTasks; shows an example"
 {
     list tmp = waitTasks(#, size(#));
 }
@@ -982,12 +1072,17 @@ example
 }
 
 proc pollTask(task t)
-"USAGE:   pollTask(l); l link
-RETURN:   a list result. result[1] is 1 if the task is finished and 0
-          otherwise. If the task is finished, then result[2] is the
-          result of the task.
-SEE ALSO: startTask, stopTask, waitTask, parallel_lib
-KEYWORDS: Parallelization; Links
+"USAGE:   pollTask(t), t task
+RETURN:   1, if the computation of the task t has successfully finished;
+          0, otherwise.
+       @* The state of any task whose computation has successfully finished is
+          set to 'completed'.
+NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
+          polled.
+       @* The result of any completed task can be accessed via @ref{getResult}.
+       @* pollTask() should return immediately. However, receiving the result
+          of the task may take some time.
+SEE ALSO: startTask, waitTasks, getResult, getState, printTask
 EXAMPLE:  example pollTask; shows an example"
 {
     if (t.index == 0) {
@@ -1040,6 +1135,12 @@ example
 }
 
 proc getCommand(task t)
+"USAGE:   getCommand(t), t task
+RETURN:   a string, the command of t.
+NOTE:     This command cannot be applied to tasks whose state is
+          'uninitialized'.
+SEE ALSO: getArguments, getResult, getState, createTask, printTask
+EXAMPLE:  example getCommand; shows an example"
 {
     if (t.index == 0) {
         ERROR("cannot get command of an uninitialized task");
@@ -1061,6 +1162,12 @@ example
 }
 
 proc getArguments(task t)
+"USAGE:   getArguments(t), t task
+RETURN:   a list, the arguments of t.
+NOTE:     This command cannot be applied to tasks whose state is
+          'uninitialized'.
+SEE ALSO: getCommand, getResult, getState, createTask, printTask
+EXAMPLE:  example getArguments; shows an example"
 {
     if (t.index == 0) {
         ERROR("cannot get arguments of an uninitialized task");
@@ -1082,6 +1189,12 @@ example
 }
 
 proc getResult(task t)
+"USAGE:   getResult(t), t task
+RETURN:   the result of t.
+NOTE:     This command cannot be applied to tasks whose state is not
+          'completed'.
+SEE ALSO: getCommand, getArguments, getState, waitTasks, pollTasks, printTask
+EXAMPLE:  example getResult; shows an example"
 {
     if (t.index == 0) {
         ERROR("cannot get result of an uninitialized task");
@@ -1108,6 +1221,11 @@ example
 }
 
 proc getState(task t)
+"USAGE:   getState(t), t task
+RETURN:   a string, the state of t.
+SEE ALSO: getCommand, getArguments, getResult, printTask, createTask,
+          startTasks, stopTask, waitTasks, pollTask, killTask
+EXAMPLE:  example getState; shows an example"
 {
     if (t.index == 0) {
         return("uninitialized");
@@ -1134,6 +1252,9 @@ example
 }
 
 proc semaphore(int n)
+"USAGE:   semaphore(n), n int
+RETURN:   the index of a new semaphore initialized with n.
+EXAMPLE:  example semaphore; shows an example"
 {
     int i = 1;
     while (system("semaphore", "exists", i) == 1) {
