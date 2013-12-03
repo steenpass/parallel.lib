@@ -46,7 +46,6 @@ NOTE:     The entries of the list commands must be strings. The entries of the
        @* The returned list may contain more than N results if several jobs
           finished \"at the same time\". It may contain less than N results in
           the case of timeout or errors occurring.
-KEYWORDS: parallel skeletons
 SEE ALSO: parallelWaitAll, parallelWaitFirst, tasks_lib
 EXAMPLE:  example parallelWaitN; shows an example"
 {
@@ -110,7 +109,6 @@ RETURN:   a list, containing at least one (if no timeout occurs) of the results
           @code{parallelWaitN(commands, arguments, 1[, timeout])}. See
           @ref{parallelWaitN} for details on optional arguments and other
           remarks.
-KEYWORDS: parallel skeletons
 SEE ALSO: parallelWaitN, parallelWaitAll, tasks_lib
 EXAMPLE:  example parallelWaitFirst; shows an example"
 {
@@ -137,9 +135,8 @@ RETURN:   a list, containing the results of commands[i] applied to
           synonymous to @code{parallelWaitN(commands, arguments,
           size(arguments)[, timeout])}. See @ref{parallelWaitN} for details on
           optional arguments and other remarks.
-       @* As a shortcut, @code{commands} can be a string. This is synonymous to
+NOTE:     As a shortcut, @code{commands} can be a string. This is synonymous to
           providing a list of @code{size(arguments)} copies of this string.
-KEYWORDS: parallel skeletons
 SEE ALSO: parallelWaitFirst, parallelWaitN, tasks_lib
 EXAMPLE:  example parallelWaitAll; shows an example"
 {
@@ -184,7 +181,6 @@ NOTE:     The entries of the list commands must be strings. The entries of the
           i = 1, ..., size(arguments).
        @* As a shortcut, @code{commands} can be a string. This is synonymous to
           providing a list of @code{size(arguments)} copies of this string.
-KEYWORDS: parallel skeletons
 SEE ALSO: parallelTestOR, tasks_lib
 EXAMPLE:  example parallelTestAND; shows an example"
 {
@@ -240,7 +236,6 @@ NOTE:     The entries of the list commands must be strings. The entries of the
           i = 1, ..., size(arguments).
        @* As a shortcut, @code{commands} can be a string. This is synonymous to
           providing a list of @code{size(arguments)} copies of this string.
-KEYWORDS: parallel skeletons
 SEE ALSO: parallelTestAND, tasks_lib
 EXAMPLE:  example parallelTestAND; shows an example"
 {

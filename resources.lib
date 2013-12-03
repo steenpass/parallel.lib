@@ -8,11 +8,11 @@ AUTHOR:    Andreas Steenpass, e-mail: steenpass@mathematik.uni-kl.de
 
 OVERVIEW:
 The purpose of this library is to manage the computational resources of
-a SINGULAR session. The library tasks.lib and any library build upon tasks.lib
+a Singular session. The library tasks.lib and any library build upon tasks.lib
 respect these settings, i.e. they will not use more computational resources
 than provided via resources.lib.
 
-@* The provided procedures and their implementation are currently quite simple.
+The provided procedures and their implementation are currently quite simple.
 The library can be extended later on to support, e.g., distributed computations
 on several servers.
 
@@ -37,13 +37,12 @@ static proc mod_init()
 
 proc addcores(int n)
 "USAGE:   addcores(n), n int
-RETURN:   the adjusted number of available processor cores.
-       @* n is added to the number of available processor cores.
-       @* If n is negative, the number of available processor cores is reduced.
-          Note that this adjustment may take some time.
-NOTE:     The number of available processor cores must be at least 1.
+RETURN:   the adjusted number of available processor cores, after n has been
+          added to it. If n is negative, this number is reduced.
+NOTE:     The number of available processor cores must be at least 1. Reducing
+          this number may take some time.
        @* This procedure should only be called in the main process of a
-          SINGULAR session and not within any task defined via tasks.lib.
+          Singular session and not within any task defined via tasks.lib.
 SEE ALSO: setcores, getcores, tasks_lib, parallel_lib
 EXAMPLE:  example addcores; shows an example"
 {
@@ -80,13 +79,12 @@ example
 
 proc setcores(int n)
 "USAGE:   setcores(n), n int
-RETURN:   the adjusted number of available processor cores, i.e. n.
-       @* The number of available processor cores is set to n.
-       @* Note that reducing the number of available processor cores may take
-          some time.
-NOTE:     The number of available processor cores must be at least 1.
+RETURN:   n. The number of available processor cores is set to n and n is
+          returned.
+NOTE:     The number of available processor cores must be at least 1. Reducing
+          this number may take some time.
        @* This procedure should only be called in the main process of a
-          SINGULAR session and not within any task defined via tasks.lib.
+          Singular session and not within any task defined via tasks.lib.
 SEE ALSO: addcores, getcores, tasks_lib, parallel_lib
 EXAMPLE:  example setcores; shows an example"
 {
@@ -104,7 +102,7 @@ proc getcores()
 "USAGE:   getcores(n), n int
 RETURN:   the number of available processor cores.
 NOTE:     This procedure should only be called in the main process of
-          a SINGULAR session and not within any task defined via tasks.lib.
+          a Singular session and not within any task defined via tasks.lib.
 SEE ALSO: addcores, setcores, tasks_lib, parallel_lib
 EXAMPLE:  example getcores; shows an example"
 {

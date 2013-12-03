@@ -223,7 +223,7 @@ proc killTask(task t)
 RETURN:   nothing. If the state of t is 'started', then t is stopped first. The
           internal data structures of t are erased and its state is set to
           'uninitialized'.
-NOTE:     'killTask(t);' is not the same as 'kill t'. The latter command does
+NOTE:     'killTask(t);' is not the same as 'kill t;'. The latter command does
           not erase the internal data structures of t. Hence killTask() should
           be called for any no longer needed task in order to free memory.
 SEE ALSO: stopTask, getState, createTask, printTask
@@ -802,7 +802,7 @@ RETURN:   nothing. Stops the t and sets its state to 'stopped'.
 NOTE:     A task whose state is not 'started' cannot be stopped.
        @* Intermediate results are discarded when a task is stopped.
        @* killTask() should be called for any no longer needed task.
-SEE ALSO: startTask, waitTasks, pollTask, getState, killTask, printTask
+SEE ALSO: startTasks, waitTasks, pollTask, getState, killTask, printTask
 EXAMPLE:  example stopTask; shows an example"
 {
     if (t.index == 0) {
@@ -851,7 +851,7 @@ NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
           the case of timeout or errors occurring.
        @* Polling is guaranteed, i.e. the index of any task t for which
           'pollTask(t);' would return 1 will appear in the returned list.
-SEE ALSO: startTask, pollTask, getResult, getState, printTask
+SEE ALSO: startTasks, pollTask, getResult, getState, printTask
 EXAMPLE:  example waitTasks; shows an example"
 {
     /* initialize the timer */
@@ -1049,7 +1049,7 @@ NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
           'waitTasks(list(t1, t2, ...), size(list(t1, t2, ...)));'. Since
           returning a list of the indices of the completed tasks does not make
           sense in this case, nothing is returned.
-SEE ALSO: waitTasks, startTask, pollTask, getResult, getState, printTask
+SEE ALSO: waitTasks, startTasks, pollTask, getResult, getState, printTask
 EXAMPLE:  example waitAllTasks; shows an example"
 {
     list tmp = waitTasks(#, size(#));
@@ -1082,7 +1082,7 @@ NOTE:     A task whose state is neither 'started' nor 'completed' cannot be
        @* The result of any completed task can be accessed via @ref{getResult}.
        @* pollTask() should return immediately. However, receiving the result
           of the task may take some time.
-SEE ALSO: startTask, waitTasks, getResult, getState, printTask
+SEE ALSO: startTasks, waitTasks, getResult, getState, printTask
 EXAMPLE:  example pollTask; shows an example"
 {
     if (t.index == 0) {
@@ -1193,7 +1193,7 @@ proc getResult(task t)
 RETURN:   the result of t.
 NOTE:     This command cannot be applied to tasks whose state is not
           'completed'.
-SEE ALSO: getCommand, getArguments, getState, waitTasks, pollTasks, printTask
+SEE ALSO: getCommand, getArguments, getState, waitTasks, pollTask, printTask
 EXAMPLE:  example getResult; shows an example"
 {
     if (t.index == 0) {
