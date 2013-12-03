@@ -16,7 +16,7 @@ The provided procedures and their implementation are currently quite simple.
 The library can be extended later on to support, e.g., distributed computations
 on several servers.
 
-KEYWORDS:  parallelization; distributed computing
+KEYWORDS:  parallelization; distributed computing; semaphores
 
 SEE ALSO:  tasks_lib, parallel_lib
 
@@ -24,12 +24,13 @@ PROCEDURES:
   addcores();  add an integer to the number of available processor cores
   setcores();  set the number of available processor cores
   getcores();  get the number of available processor cores
+  semaphore(); initialize a new semaphore
 ";
 
 /* initialize (lib-)global variables */
 static proc mod_init()
 {
-    int sem_cores = 0;   // set in kernel
+    int sem_cores = semaphore(system("--cpus"))-1;
     exportto(Resources, sem_cores);
     int NCORES = system("semaphore", "get_value", sem_cores)+1;
     exportto(Resources, NCORES);
@@ -114,5 +115,47 @@ example
     echo = 2;
     setcores(4);
     getcores();
+}
+
+proc semaphore(int n)
+"USAGE:   semaphore(n), n int
+RETURN:   the index of a new semaphore initialized with n.
+EXAMPLE:  example semaphore; shows an example"
+{
+    int i = 1;
+    while (system("semaphore", "exists", i) == 1) {
+        i++;
+    }
+    if (system("semaphore", "init", i, n) != 1) {
+        ERROR("no more semphores");
+    }
+    return(i);
+}
+example
+{
+    "EXAMPLE:";
+    echo = 2;
+    int sem = semaphore(1);
+    system("semaphore", "acquire", sem);
+    system("semaphore", "try_acquire", sem);
+    system("semaphore", "release", sem);
+    system("semaphore", "try_acquire", sem);
+}
+
+/* wrapper for the now obsolete optional parameter in parallel.lib for the
+ * number of processor cores
+ */
+static proc setcores_subtree(int n)
+{
+    list oldvalues = list(sem_cores, NCORES);
+    sem_cores = semaphore(n-1);
+    NCORES = n;
+    return(oldvalues);
+}
+
+static proc resetcores_subtree(list oldvalues)
+{
+    sem_cores = oldvalues[1];
+    NCORES = oldvalues[2];
 }
 

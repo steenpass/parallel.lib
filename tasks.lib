@@ -21,7 +21,7 @@ tasks are started recursively.
 The Singular library @ref{parallel.lib} provides implementations of several
 parallel 'skeletons' based on tasks.lib.
 
-KEYWORDS:  parallelization; distributed computing; task; semaphores
+KEYWORDS:  parallelization; distributed computing; task
 
 SEE ALSO:  resources_lib, parallel_lib
 
@@ -40,7 +40,6 @@ PROCEDURES:
   getArguments();  get the arguments of a task
   getResult();     get the result of a task
   getState();      get the state of a task
-  semaphore();     initialize a new semaphore
 ";
 
 /*
@@ -1249,31 +1248,6 @@ example
     getState(t);
     killTask(t);
     getState(t);
-}
-
-proc semaphore(int n)
-"USAGE:   semaphore(n), n int
-RETURN:   the index of a new semaphore initialized with n.
-EXAMPLE:  example semaphore; shows an example"
-{
-    int i = 1;
-    while (system("semaphore", "exists", i) == 1) {
-        i++;
-    }
-    if (system("semaphore", "init", i, n) != 1) {
-        ERROR("no more semphores");
-    }
-    return(i);
-}
-example
-{
-    "EXAMPLE:";
-    echo = 2;
-    int sem = semaphore(1);
-    system("semaphore", "acquire", sem);
-    system("semaphore", "try_acquire", sem);
-    system("semaphore", "release", sem);
-    system("semaphore", "try_acquire", sem);
 }
 
 / * construct the string "name[1], name[2], name[3], ..., name[length]" */

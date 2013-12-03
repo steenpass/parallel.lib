@@ -52,6 +52,27 @@ EXAMPLE:  example parallelWaitN; shows an example"
     // auxiliary variables
     int i;
 
+    // read optional parameters
+    int timeout;
+    int ncores;   // obsolete, but kept for compatibility with old libraries
+    if (size(#) > 0) {
+        if (typeof(#[1]) != "int") {
+            ERROR("wrong optional parameters");
+        }
+        timeout = #[1];
+        if (size(#) > 1) {
+            if (size(#) > 2 || typeof(#[2]) != "int") {
+                ERROR("wrong optional parameters");
+            }
+            ncores = #[2];
+        }
+    }
+
+    // apply wrapper for obsolete optional parameter ncores
+    if (ncores) {
+        list semaphore_save = Resources::setcores_subtree(ncores);
+    }
+
     // error checking
     int njobs = size(commands);
     if (njobs != size(args)) {
@@ -75,7 +96,12 @@ EXAMPLE:  example parallelWaitN; shows an example"
         task t(i) = commands[i], args[i];
     }
     startTasks(t(1..njobs));
-    list indices = waitTasks(list(t(1..njobs)), N, #);
+    list indices = waitTasks(list(t(1..njobs)), N, timeout);
+
+    // wrap back to saved semaphore
+    if (ncores) {
+        Resources::resetcores_subtree(semaphore_save);
+    }
 
     // return results
     list results;
