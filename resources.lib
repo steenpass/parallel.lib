@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////
-version="$Id$";
+version="version resources.lib 3-1-7-0 Dec_2013 ";
 category="General purpose";
 info="
 LIBRARY:   resources.lib  Tools to manage the computational resources

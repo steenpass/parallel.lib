@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////
-version="$Id$";
+version="version parallel.lib 3-1-7-0 Dec_2013 ";
 category="General purpose";
 info="
 LIBRARY:   parallel.lib  An abstraction layer for parallel skeletons
