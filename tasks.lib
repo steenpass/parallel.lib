@@ -596,16 +596,17 @@ static proc startTasks_child(list localtasks, int pid_parent)
                         queue = give_priority(queue, id);
                         deadlock = 1;
                     }
+                }
+                for (i = size(demanded_tasks)-1; i > 1; i--) {
+                    id = demanded_tasks[i];
+                    if (state[id] == 1) {   // started
+                        deadlock = 0;
+                    }
                     if (state[id] == 2) {   // computed
                         write(links[assignment[id]], 1);
                         demanded_tasks = removeFromIntvec(demanded_tasks, id);
                         ndemanded--;
                         results_sent++;
-                    }
-                }
-                for (i = size(demanded_tasks)-1; i > 1; i--) {
-                    id = demanded_tasks[i];
-                    if (state[id] == 1) {   // started
                         deadlock = 0;
                     }
                 }
