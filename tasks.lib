@@ -469,7 +469,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
     int nfinished;
         // the number of local tasks with internal state 3 (result sent) or
         // -1 (stopped)
-    intvec queue = 0, 1..nlocaltasks, 0;   // zeroes for easier handling
+    intvec queue = 1..nlocaltasks;
+    int next = 1;
 
     list links;
     links[nlocaltasks+1] = l(pid_parent);
@@ -540,12 +541,12 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 links[nlinks] = ll(pid)(nlinks);
                 write(links[nlinks],
                     quote(startTasks_grandchild(
-                    eval(localtasks[queue[2]].index), eval(pid_parent),
+                    eval(localtasks[queue[next]].index), eval(pid_parent),
                     eval(pid), eval(nlinks), eval(sem_write))));
-                assignment[queue[2]] = nlinks;
-                state[queue[2]] = 1;
+                assignment[queue[next]] = nlinks;
+                state[queue[next]] = 1;
                 nwaiting--;
-                queue = 0, queue[3..size(queue)];
+                next++;
             }
             // wait == 0
         }
@@ -567,19 +568,20 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 0) {   // stopTask
                 id = read(l(pid_parent));
                 if (state[id] == 0) {   // waiting
-                    queue = removeFromIntvec(queue, id);
+                    queue = give_priority(queue, intvec(id));
+                    next++;
                 }
                 if (state[id] == 1 || state[id] == 2) {  // started or computed
                     close(links[assignment[id]]);
                     open(links[assignment[id]]);
                     write(links[assignment[id]],
                         quote(startTasks_grandchild(
-                        eval(localtasks[queue[2]].index), eval(pid_parent),
+                        eval(localtasks[queue[next]].index), eval(pid_parent),
                         eval(pid), eval(assignment[id]), eval(sem_write))));
-                    assignment[queue[2]] = assignment[id];
+                    assignment[queue[next]] = assignment[id];
                     assignment[id] = 0;
-                    state[queue[2]] = 1;
-                    queue = 0, queue[3..size(queue)];
+                    state[queue[next]] = 1;
+                    next++;
                 }
                 // state[id] == -1 (stopped) or state[id] == 3 (sent)
                 // should not happen
@@ -615,6 +617,8 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 }
                 if (j > 0) {
                     waiting_tasks = waiting_tasks[1..j];
+                    queue = queue[next..size(queue)];
+                    next = 1;
                     queue = give_priority(queue, waiting_tasks);
                     waiting_tasks = 0;
                 }
@@ -639,17 +643,19 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     links[nlinks] = ll(pid)(nlinks);
                     write(links[nlinks],
                         quote(startTasks_grandchild(
-                        eval(localtasks[queue[2]].index), eval(pid_parent),
+                        eval(localtasks[queue[next]].index), eval(pid_parent),
                         eval(pid), eval(nlinks), eval(sem_write))));
-                    assignment[queue[2]] = nlinks;
-                    state[queue[2]] = 1;
+                    assignment[queue[next]] = nlinks;
+                    state[queue[next]] = 1;
                     nwaiting--;
-                    queue = 0, queue[3..size(queue)];
+                    next++;
                 }
             }
             if (code == 2) {   // pollTask
                 id = read(l(pid_parent));
                 if (state[id] == 0) {   // waiting
+                    queue = queue[next..size(queue)];
+                    next = 1;
                     queue = give_priority(queue, intvec(id));
                 }
                 if (state[id] == 2) {   // computed
@@ -661,15 +667,15 @@ static proc startTasks_child(list localtasks, int pid_parent)
                 id = read(l(pid_parent));
                 write(links[assignment[id]],
                     quote(startTasks_grandchild(
-                    eval(localtasks[queue[2]].index), eval(pid_parent),
+                    eval(localtasks[queue[next]].index), eval(pid_parent),
                     eval(pid), eval(assignment[id]), eval(sem_write))));
-                assignment[queue[2]] = assignment[id];
+                assignment[queue[next]] = assignment[id];
                 assignment[id] = 0;
-                state[queue[2]] = 1;
+                state[queue[next]] = 1;
                 state[id] = 3;
                 nwaiting--;
                 nfinished++;
-                queue = 0, queue[3..size(queue)];
+                next++;
             }
         }
     }
@@ -802,21 +808,6 @@ static proc removeDemanded(alias int id)
     return(0);
 }
 
-/* Remove the first occurence (if any) of n in v[2..(size(v)-1)].
- * Note that v[1] and v[size(v)] are not checked.
- */
-static proc removeFromIntvec(intvec v, int n)
-{
-    int size_v = size(v);
-    int i;
-    for (i = size_v-1; i > 1; i--) {
-        if (v[i] == n) {
-            return(v[1..(i-1)], v[(i+1)..size_v]);
-        }
-    }
-    return(v);
-}
-
 /* Move the elements in 'preferred' to the beginning of 'queue'. We may assume
  * that
  * - 'preferred' is a subset of 'queue';
@@ -826,14 +817,13 @@ static proc removeFromIntvec(intvec v, int n)
  * more or less ordered in most cases. Note that queue has the format
  * '0, indices, 0'.
  */
-proc give_priority(intvec queue, intvec preferred)
+static proc give_priority(intvec queue, intvec preferred)
 {
-    int size_queue = size(queue)-2;
+    int size_queue = size(queue);
     int size_preferred = size(preferred);
     if (size_queue == size_preferred) {
         return(queue);
     }
-    queue = queue[2..(size_queue+1)];
     int index = size_queue;
     int i;
     int j;
@@ -857,7 +847,7 @@ proc give_priority(intvec queue, intvec preferred)
             index++;
         }
     }
-    queue = 0, preferred, not_preferred, 0;
+    queue = preferred, not_preferred;
     return(queue);
 }
 
