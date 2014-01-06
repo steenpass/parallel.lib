@@ -488,10 +488,12 @@ static proc startTasks_child(list localtasks, int pid_parent)
     int results_sent;
 
     // auxiliary variables
+    intvec waiting_tasks;
     int wait;
     int deadlock;
     int tmp;
     int i;
+    int j;
 
     while (nwaiting > 0) {
         wait = 0;
@@ -590,12 +592,20 @@ static proc startTasks_child(list localtasks, int pid_parent)
                     results_sent = 0;
                 }
                 deadlock = 0;
+                waiting_tasks = 0:demanded_tasks_index;
+                j = 0;
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
                     if (state[id] == 0) {   // waiting
-                        queue = give_priority(queue, id);
+                        j++;
+                        waiting_tasks[j] = id;
                         deadlock = 1;
                     }
+                }
+                if (j > 0) {
+                    waiting_tasks = waiting_tasks[1..j];
+                    queue = give_priority(queue, waiting_tasks);
+                    waiting_tasks = 0;
                 }
                 for (i = size(demanded_tasks)-1; i > 1; i--) {
                     id = demanded_tasks[i];
@@ -629,7 +639,7 @@ static proc startTasks_child(list localtasks, int pid_parent)
             if (code == 2) {   // pollTask
                 id = read(l(pid_parent));
                 if (state[id] == 0) {   // waiting
-                    queue = give_priority(queue, id);
+                    queue = give_priority(queue, intvec(id));
                 }
                 if (state[id] == 2) {   // computed
                     write(links[assignment[id]], 1);
@@ -781,18 +791,47 @@ static proc removeFromIntvec(intvec v, int n)
     return(v);
 }
 
-/* Move the first occurence (if any) of id in queue[2..(size(queue)-1)] to
- * queue[2]. Note that queue[1] and queue[size(v)] are not checked.
+/* Move the elements in 'preferred' to the beginning of 'queue'. We may assume
+ * that
+ * - 'preferred' is a subset of 'queue';
+ * - the elements of 'preferred' are distinct and non-zero;
+ * - the elements of 'queue' are distinct and non-zero.
+ * For performance reasons, we may also assume that 'queue' and 'preferred' are
+ * more or less ordered in most cases. Note that queue has the format
+ * '0, indices, 0'.
  */
-static proc give_priority(intvec queue, int id)
+proc give_priority(intvec queue, intvec preferred)
 {
-    int size_queue = size(queue);
+    int size_queue = size(queue)-2;
+    int size_preferred = size(preferred);
+    if (size_queue == size_preferred) {
+        return(queue);
+    }
+    queue = queue[2..(size_queue+1)];
+    int index = size_queue;
     int i;
-    for (i = size_queue-1; i > 2; i--) {
-        if (queue[i] == id) {
-            return(0, id, queue[2..(i-1)], queue[(i+1)..size_queue]);
+    int j;
+    for (i = size_preferred; i > 0; i--) {
+        for (j = size_queue; j > 0; j--) {
+            if (queue[index] == preferred[i]) {
+                queue[index] = 0;
+                break;
+            }
+            index--;
+            if (index == 0) {
+                index = size_queue;
+            }
         }
     }
+    intvec not_preferred = 0:(size_queue-size_preferred);
+    index = 1;
+    for (i = 1; i <= size_queue; i++) {
+        if (queue[i]) {
+            not_preferred[index] = queue[i];
+            index++;
+        }
+    }
+    queue = 0, preferred, not_preferred, 0;
     return(queue);
 }
 
